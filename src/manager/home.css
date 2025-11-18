@@ -1,0 +1,148 @@
+@import url("https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css");
+      
+* {
+  -webkit-font-smoothing: antialiased;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0px;
+  height: 100%;
+  font-family: "Inter", Helvetica, sans-serif;
+}
+
+.manager-home {
+  background-color: #fef7ff;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+
+/* HEADER / BARRA SUPERIOR */
+.rectangle {
+  width: 100%;
+  height: 40px;
+  background-color: #8f0b09;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 23px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.header-title {
+  font-family: "Inter", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-name {
+  font-family: "Inter", Helvetica;
+  font-weight: 400;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+.user-icon {
+  width: 24px;
+  height: 23px;
+  position: relative;
+}
+
+/* CONTENIDO PRINCIPAL */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 60px;
+}
+
+.welcome-title {
+  font-family: "Inter", Helvetica;
+  font-weight: 600;
+  color: #8f0b09;
+  font-size: 28px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* BOTONES */
+.menu-button {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  width: 100%;
+  max-width: 391px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  background-color: #8f0b09;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #8f0b09;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.menu-button:hover {
+  background-color: #770000;
+}
+
+.menu-button:focus-visible {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
+.button-text {
+  width: fit-content;
+  font-family: "Inter", Helvetica;
+  font-weight: 500;
+  color: #ffffff;
+  font-size: 16px;
+  letter-spacing: 0;
+  line-height: normal;
+  white-space: nowrap;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .main-content {
+    max-width: 100%;
+  }
+  
+  .menu-button {
+    max-width: 100%;
+  }
+
+  .welcome-title {
+    font-size: 24px;
+  }
+}
