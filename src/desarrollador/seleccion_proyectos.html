@@ -32,7 +32,7 @@
                 <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
                   <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
                 </svg>
-                <h3 class="text-wrapper-6">Proyecto 1</h3>
+                <h3 class="text-wrapper-6" id="proyecto1">Proyecto 1</h3>
                 <time class="text-wrapper-4" datetime="2025-11-20">Fecha límite: 20/11/2025</time>
                 <div class="frame-2" aria-hidden="true"></div>
                 <a href="#" class="text-wrapper-5">Ver proyecto</a>
@@ -46,7 +46,7 @@
                 <svg class="folder-2" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
                   <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
                 </svg>
-                <h3 class="text-wrapper-9">Proyecto 2</h3>
+                <h3 class="text-wrapper-9" id="proyecto2">Proyecto 2</h3>
                 <time class="text-wrapper-7" datetime="2025-12-20">Fecha límite: 20/12/2025</time>
                 <div class="frame-4" aria-hidden="true"></div>
                 <a href="#" class="text-wrapper-8">Ver proyecto</a>
@@ -60,7 +60,7 @@
                 <svg class="folder-3" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
                   <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
                 </svg>
-                <h3 class="text-wrapper-12">Proyecto 3</h3>
+                <h3 class="text-wrapper-12" id="proyecto3">Proyecto 3</h3>
                 <time class="text-wrapper-10" datetime="2026-01-20">Fecha límite: 20/01/2026</time>
                 <div class="frame-6" aria-hidden="true"></div>
                 <a href="#" class="text-wrapper-11">Ver proyecto</a>
@@ -76,5 +76,22 @@
         </button>
       </div>
     </main>
+
+    <script src="index.js"></script>
+    <script>
+      // obviamente esto no es como debe ser, solo para ver si anda.
+      let p1 = document.querySelector("#proyecto1");
+      let p2 = document.querySelector("#proyecto2");
+      let p3 = document.querySelector("#proyecto3");
+
+      // cargar los proyectos
+      let proyectosConTareas = getData();
+      // poner los nombres al menos por ahora
+      proyectosConTareas.then(p => {
+        p1.innerHTML = p[0].nombre;
+        p2.innerHTML = p[1].nombre;
+        p3.innerHTML = p[2].nombre;
+      });
+    </script>
   </body>
 </html>

@@ -29,7 +29,7 @@
           <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="white">
             <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
           </svg>
-          <h2 class="text-wrapper-2">Proyecto: Nombre del Proyecto</h2>
+          <h2 class="text-wrapper-2" id="proyecto1">Proyecto: Nombre del Proyecto</h2>
           <div class="select-field">
             <label for="week-select" style="position: absolute; width: 1px; height: 1px; overflow: hidden;">Seleccione su semana</label>
             <select id="week-select" class="select" name="week">
@@ -182,6 +182,7 @@
       </div>
     </div>
 
+    <script src="index.js"></script>
     <script>
       // Estado de la aplicación
       let tasks = [
@@ -379,6 +380,26 @@
 
       // Renderizar tareas iniciales
       renderTasks();
+    </script>
+
+    <script>
+      let p1 = document.querySelector("#proyecto1");
+
+      // cargar los proyectos
+      let proyectosConTareas = getData();
+      // poner los nombres al menos por ahora
+      proyectosConTareas.then(p => {
+        console.log(p)
+        p1.innerHTML =  `Proyecto: ${p[0].nombre}`;
+        // poner el nombre de una tarea
+        t1 = document.querySelector("[data-task-id='1'] > div > span");
+        t2 = document.querySelector("[data-task-id='2'] > div > span");
+        t3 = document.querySelector("[data-task-id='3'] > div > span");
+        console.log(t1)
+        t1.innerHTML = p[0].tasks[0].nombre;
+        t2.innerHTML = p[0].tasks[1].nombre;
+        t3.innerHTML = p[0].tasks[2].nombre;
+      });
     </script>
   </body>
 </html>
