@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de horas de recurso semanal</title>
+</head>
+<body>
+    <h1>Reporte de horas semanal de horas por empleado (recurso)</h1>
+    <h2>Seleccione empleado (recurso)</h2>
+
+
+    <ul id="lista_de_recursos">
+    </ul>
+    
+    <script src="../../APIClient.js"></script>
+
+    <script>
+    
+        let listaDeRecursos = document.querySelector("#lista_de_recursos");
+
+        APIClient.getAllResources().then(recursos => {
+            recursos.forEach(recurso => {
+                listaDeRecursos.innerHTML += `<li><a href="reporte_recurso.html?id=${recurso.id}&nombre=${recurso.nombre}&apellido=${recurso.apellido}">${recurso.nombre} ${recurso.apellido}</a></li>`;
+            });
+        });
+
+    </script>
+</body>
+</html>

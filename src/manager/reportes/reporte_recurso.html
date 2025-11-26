@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de recurso</title>
+</head>
+
+<body>
+
+    <h1>Reporte de horas de <span id="nombre_recurso"></span></h1>
+
+    <table>
+
+        <tr>
+            <th>semana</th>
+            <th>cant horas</th>
+        </tr>
+        <tbody id="tabla_semana_horas">
+
+        </tbody>
+    
+    </table>
+    <script src="../../APIClient.js"></script>
+    <script>
+
+        const tablaSemanaHoras = document.querySelector("#tabla_semana_horas");
+        const nombreRecurso = document.querySelector("#nombre_recurso");
+
+        const parametros = new URLSearchParams(window.location.search);
+        const idRecurso = parametros.get('id');
+        nombreRecurso.innerHTML = `${parametros.get('nombre')} ${parametros.get('apellido')}`;
+        
+        APIClient.getTimeEntriesByResource(idRecurso).then(r => cargarTablaSemanaHoras(r))
+
+        function cargarTablaSemanaHoras(entradas) {
+            console.log(entradas)
+            entradas.forEach(entrada => {
+                tablaSemanaHoras.innerHTML += `<tr><td>${entrada.fecha}</td><td>${entrada.horas}</td></tr>`
+            });
+        }
+
+    </script>
+</body>
+
+</html>
