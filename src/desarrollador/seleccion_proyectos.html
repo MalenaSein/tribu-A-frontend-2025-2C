@@ -25,73 +25,59 @@
       <div class="content-wrapper">
         <h2 class="text-wrapper-3">Seleccione su Proyecto</h2>
         
-        <div class="project-list">
-          <section class="frame">
-            <article class="project-card">
-              <div class="rectangle-2">
-                <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
-                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-                </svg>
-                <h3 class="text-wrapper-6" id="proyecto1">Proyecto 1</h3>
-                <time class="text-wrapper-4" datetime="2025-11-20">Fecha límite: 20/11/2025</time>
-                <div class="frame-2" aria-hidden="true"></div>
-                <a href="#" class="text-wrapper-5">Ver proyecto</a>
-              </div>
-            </article>
-          </section>
+        <div class="project-list" >
+          <section class="frame" id="contenedor_tarjetas">
+            <p>cargando...</p>
+          </section> 
           
-          <section class="frame-3">
-            <article class="project-card">
-              <div class="rectangle-2">
-                <svg class="folder-2" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
-                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-                </svg>
-                <h3 class="text-wrapper-9" id="proyecto2">Proyecto 2</h3>
-                <time class="text-wrapper-7" datetime="2025-12-20">Fecha límite: 20/12/2025</time>
-                <div class="frame-4" aria-hidden="true"></div>
-                <a href="#" class="text-wrapper-8">Ver proyecto</a>
-              </div>
-            </article>
-          </section>
-          
-          <section class="frame-5">
-            <article class="project-card">
-              <div class="rectangle-2">
-                <svg class="folder-3" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
-                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-                </svg>
-                <h3 class="text-wrapper-12" id="proyecto3">Proyecto 3</h3>
-                <time class="text-wrapper-10" datetime="2026-01-20">Fecha límite: 20/01/2026</time>
-                <div class="frame-6" aria-hidden="true"></div>
-                <a href="#" class="text-wrapper-11">Ver proyecto</a>
-              </div>
-            </article>
           </section>
         </div>
       </div>
       
       <div class="button-wrapper">
-        <button class="button-2" type="button">
+        <a href="../index.html" class="button-2" type="button">
           <span class="button-3">Volver al Inicio</span>
-        </button>
+        </a>
       </div>
     </main>
 
-    <script src="index.js"></script>
+    <script src="../APIClient.js"></script>
     <script>
-      // obviamente esto no es como debe ser, solo para ver si anda.
-      let p1 = document.querySelector("#proyecto1");
-      let p2 = document.querySelector("#proyecto2");
-      let p3 = document.querySelector("#proyecto3");
+      const parametros = new URLSearchParams(window.location.search);
+      const idRecurso = parametros.get('id');
 
+      let proyectos = [];
       // cargar los proyectos
-      let proyectosConTareas = getData();
-      // poner los nombres al menos por ahora
-      proyectosConTareas.then(p => {
-        p1.innerHTML = p[0].nombre;
-        p2.innerHTML = p[1].nombre;
-        p3.innerHTML = p[2].nombre;
+      APIClient.getProjectsByEmployeeId(idRecurso).then( proyectos => {
+
+        console.log(proyectos);
+        const contenedorTarjetas = document.querySelector("#contenedor_tarjetas");
+            if(proyectos.length == 0) {
+              contenedorTarjetas.innerHTML = "no hay proyectos para este empleado";
+            } else {
+              proyectos.forEach(proyecto => {
+                contenedorTarjetas.innerHTML ="";
+                contenedorTarjetas.innerHTML += crearTarjeta(proyecto);
+              });
+
+            }
+
+
       });
+
+      function crearTarjeta(proyecto) {
+        return `<article class="project-card">
+              <div class="rectangle-2">
+                <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
+                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+                </svg>
+                <h3 class="text-wrapper-6" id="">${proyecto.nombre}</h3>
+                <div class="frame-2" aria-hidden="true"></div>
+                <a href="carga_horas.html?id=${proyecto.id}" class="text-wrapper-5">Ver proyecto</a>
+              </div>
+            </article>`
+      }
+
     </script>
   </body>
 </html>

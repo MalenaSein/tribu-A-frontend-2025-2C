@@ -3,6 +3,7 @@ const ENDPOINT_RECURSOS = "/resources"
 const ENDPOINT_PROYECTOS = "/projects"
 const ENDPOINT_TIME_ENTRIES_BY_RESOURCE = "/reports/resources"
 const ENDPOINT_REPORT_PROJECTS_RESOURCES_BY_YEAR = "/reports/projects"
+const ENDPOINT_PROYECTOS_POR_RECURSO = "/resources"
 
 let APIClient = {
     getAllResources : async function () {
@@ -19,6 +20,12 @@ let APIClient = {
 
     getResourcesByProjectAndYear: async function(projectId, year) {
         return getData(URL_BASE + ENDPOINT_REPORT_PROJECTS_RESOURCES_BY_YEAR + "/" + projectId + "/" + year)
+    },
+
+    getProjectsByEmployeeId: async function (id) {
+      return getData(URL_BASE + ENDPOINT_PROYECTOS + ENDPOINT_RECURSOS + "/" + id)
+      // return getData(URL_BASE + ENDPOINT_PROYECTOS )
+      
     }
 }
 
