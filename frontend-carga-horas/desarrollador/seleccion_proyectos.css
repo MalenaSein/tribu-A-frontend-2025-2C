@@ -1,3 +1,10 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Asegura que el padding y border se incluyan en el ancho */
+  overflow-x: hidden; /* Oculta el scroll horizontal */
+}
+
 /* ============================================
    SELECCIÓN DE PROYECTOS
    ============================================ */
@@ -23,10 +30,11 @@
   justify-content: space-between;
   padding: 0 23px;
   position: relative;
+  z-index: 100;
 }
 
-.proyectos .div {
-  font-family: "Inter-Regular", Helvetica;
+.div {
+  font-family: "Inter", Helvetica;
   font-weight: 400;
   color: #ffffff;
   font-size: 16px;
@@ -36,10 +44,10 @@
   margin: 0;
 }
 
-.proyectos .user-info {
+.user-info {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
 }
 
 .proyectos .text-wrapper-2 {
@@ -52,18 +60,10 @@
   white-space: nowrap;
 }
 
-.proyectos .user {
+.user {
   width: 24px;
   height: 23px;
   position: relative;
-}
-
-.proyectos .icon-3 {
-  position: absolute;
-  width: 66.67%;
-  height: 75.00%;
-  top: 3.80%;
-  left: 8.33%;
 }
 
 /* ============================================
@@ -229,7 +229,14 @@
   transition: background-color 0.2s;
 }
 
-.proyectos .button-2:hover {
+
+.button-2 {
+  background-color: #8f0b09;
+  border-color: #8f0b09;
+  color: #ffffff;
+}
+
+.button-2:hover {
   background-color: #770000;
 }
 
