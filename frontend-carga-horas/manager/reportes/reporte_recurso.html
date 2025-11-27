@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte Semanal de Horas</title>
+    <script src="../../auth-service.js"></script>
+    <script src="../../route-guard.js"></script>
+    <script src="../../config.js"></script>
+    <script src="../../APIClient.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #fef7ff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8f0b09;
+            margin-bottom: 20px;
+        }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        input[type="date"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cac4d0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #8f0b09;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #770000;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+        .report-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .report-header {
+            border-bottom: 2px solid #8f0b09;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .report-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .info-item {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 6px;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .info-value {
+            font-size: 18px;
+            color: #333;
+            margin-top: 5px;
+        }
+        .week-section {
+            margin-bottom: 30px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .week-header {
+            background-color: #964141;
+            color: white;
+            padding: 12px 15px;
+            font-weight: 600;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background-color: #fafafa;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-DRAFT { background-color: #fff3cd; color: #856404; }
+        .status-SUBMITTED { background-color: #cce5ff; color: #004085; }
+        .status-APPROVED { background-color: #d4edda; color: #155724; }
+        .status-REJECTED { background-color: #f8d7da; color: #721c24; }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .back-button {
+            background-color: #cca4a3;
+            color: #000;
+            margin-bottom: 20px;
+        }
+        .back-button:hover {
+            background-color: #b89392;
+        }
+    </style>
+</head>
+<body>
+<button class="back-button" onclick="window.location.href='reporte_horas_recurso_semanal.html'">
+    ← Volver a lista de empleados
+</button>
+
+<h1>Reporte Semanal de Horas</h1>
+
+<div class="filters">
+    <div class="filter-row">
+        <div class="filter-group">
+            <label for="startDate">Fecha Inicio:</label>
+            <input type="date" id="startDate" required>
+        </div>
+        <div class="filter-group">
+            <label for="endDate">Fecha Fin:</label>
+            <input type="date" id="endDate" required>
+        </div>
+        <div>
+            <button id="generateBtn" onclick="generarReporte()">Generar Reporte</button>
+        </div>
+    </div>
+</div>
+
+<div id="loading" class="loading" style="display: none;">
+    Cargando reporte...
+</div>
+
+<div id="reportContainer" style="display: none;"></div>
+
+<script>
+    // Obtener datos de URL
+    const params = new URLSearchParams(window.location.search);
+    const employeeId = params.get('id');
+    const employeeName = `${params.get('nombre')} ${params.get('apellido')}`;
+
+    if (!employeeId) {
+        alert('No se especificó un empleado');
+        window.location.href = 'reporte_horas_recurso_semanal.html';
+    }
+
+    const today = new Date();
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    document.getElementById('endDate').valueAsDate = today;
+    document.getElementById('startDate').valueAsDate = lastMonth;
+
+    async function generarReporte() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+
+        if (!startDate || !endDate) {
+            alert('Por favor seleccione ambas fechas');
+            return;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            alert('La fecha de inicio debe ser anterior a la fecha de fin');
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('reportContainer').style.display = 'none';
+        document.getElementById('generateBtn').disabled = true;
+
+        try {
+            const reporte = await APIClient.getWeeklyHoursReport(employeeId, startDate, endDate);
+
+            if (!reporte || !reporte.weekSummaries || reporte.weekSummaries.length === 0) {
+                mostrarSinDatos();
+                return;
+            }
+
+            mostrarReporte(reporte);
+        } catch (error) {
+            console.error('Error al generar reporte:', error);
+            alert('Error al generar el reporte. Por favor intente nuevamente.');
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('generateBtn').disabled = false;
+        }
+    }
+
+    function mostrarReporte(reporte) {
+        const container = document.getElementById('reportContainer');
+
+        let html = `
+                <div class="report-container">
+                    <div class="report-header">
+                        <h2>${reporte.employeeName}</h2>
+                    </div>
+
+                    <div class="report-info">
+                        <div class="info-item">
+                            <div class="info-label">Período</div>
+                            <div class="info-value">${formatDate(reporte.startDate)} - ${formatDate(reporte.endDate)}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Total de Horas</div>
+                            <div class="info-value">${reporte.totalHours.toFixed(2)} hs</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Semanas</div>
+                            <div class="info-value">${reporte.weekSummaries.length}</div>
+                        </div>
+                    </div>
+            `;
+
+        reporte.weekSummaries.forEach(week => {
+            html += `
+                    <div class="week-section">
+                        <div class="week-header">
+                            Semana ${week.weekNumber}
+                            (${formatDate(week.weekStart)} - ${formatDate(week.weekEnd)})
+                            - Total: ${week.totalHours.toFixed(2)} hs
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Proyecto</th>
+                                    <th>Horas</th>
+                                    <th>Descripción</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+            week.dailyEntries.forEach(entry => {
+                html += `
+                        <tr>
+                            <td>${formatDate(entry.workDate)}</td>
+                            <td>${entry.projectName}</td>
+                            <td>${entry.hours.toFixed(2)}</td>
+                            <td>${entry.description || '-'}</td>
+                            <td><span class="status-badge status-${entry.status}">${traducirEstado(entry.status)}</span></td>
+                        </tr>
+                    `;
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+        container.style.display = 'block';
+    }
+
+    function mostrarSinDatos() {
+        const container = document.getElementById('reportContainer');
+        container.innerHTML = `
+                <div class="no-data">
+                    <h3>No hay datos disponibles</h3>
+                    <p>No se encontraron registros de horas para el período seleccionado.</p>
+                </div>
+            `;
+        container.style.display = 'block';
+    }
+
+    function formatDate(dateStr) {
+        const date = new Date(dateStr + 'T00:00:00');
+        return date.toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    function traducirEstado(status) {
+        const estados = {
+            'DRAFT': 'Borrador',
+            'SUBMITTED': 'Enviado',
+            'APPROVED': 'Aprobado',
+            'REJECTED': 'Rechazado'
+        };
+        return estados[status] || status;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../auth-service.js"></script>
+    <script src="../../route-guard.js"></script>
+    <script src="../../config.js"></script>
+    <script src="../../APIClient.js"></script>
+    <title>Reporte de Horas Semanales</title>
+    <style>
+        body {
+            font-family: 'Inter', Helvetica, sans-serif;
+            background-color: #fef7ff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8f0b09;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #666;
+            font-size: 18px;
+            font-weight: 400;
+            margin-bottom: 30px;
+        }
+        .back-button {
+            background-color: #cca4a3;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 30px;
+            transition: background-color 0.2s;
+        }
+        .back-button:hover {
+            background-color: #b89392;
+        }
+        .employees-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .employees-list ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .employees-list li {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .employees-list li:last-child {
+            border-bottom: none;
+        }
+        .employees-list a {
+            display: block;
+            padding: 15px 10px;
+            color: #8f0b09;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .employees-list a:hover {
+            background-color: #fef7ff;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <button class="back-button" onclick="window.location.href='generar_reportes.html'">
+        ← Volver a Reportes
+    </button>
+
+    <h1>Reporte de Horas Semanales</h1>
+    <h2>Seleccione un empleado</h2>
+
+    <div id="loading" class="loading">Cargando empleados...</div>
+
+    <div class="employees-list" style="display: none;">
+        <ul id="lista_de_recursos"></ul>
+    </div>
+</div>
+
+<script>
+    const listaDeRecursos = document.querySelector("#lista_de_recursos");
+    const loading = document.querySelector("#loading");
+    const employeesList = document.querySelector(".employees-list");
+
+    APIClient.getAllResources().then(recursos => {
+        loading.style.display = 'none';
+        employeesList.style.display = 'block';
+
+        if (!recursos || recursos.length === 0) {
+            listaDeRecursos.innerHTML = '<li style="padding: 20px; text-align: center; color: #666;">No hay empleados disponibles</li>';
+            return;
+        }
+
+        recursos.forEach(recurso => {
+            listaDeRecursos.innerHTML += `
+                    <li>
+                        <a href="reporte_recurso.html?id=${recurso.id}&nombre=${recurso.nombre}&apellido=${recurso.apellido}">
+                            ${recurso.nombre} ${recurso.apellido}
+                        </a>
+                    </li>
+                `;
+        });
+    }).catch(error => {
+        console.error('Error al cargar recursos:', error);
+        loading.innerHTML = '<p style="color: #c62828;">Error al cargar empleados. Por favor intente nuevamente.</p>';
+    });
+</script>
+</body>
+</html>
