@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Sistema de Gestión de Horas - Login</title>
+  <script src="config.js"></script>
+  <script src="APIClient.js"></script>
+  <style>
+    @import url("https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css");
+
+    * {
+      -webkit-font-smoothing: antialiased;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: "Inter", Helvetica, sans-serif;
+    }
+
+    .login {
+      background-color: #fef7ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .rectangle {
+      width: 100%;
+      height: 40px;
+      background-color: #8f0b09;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 100;
+    }
+
+    .form-log-in {
+      background-color: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 60px;
+    }
+
+    .form-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #8f0b09;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .input-field {
+      margin-bottom: 20px;
+    }
+
+    .label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #000000;
+      margin-bottom: 8px;
+    }
+
+    .input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid #cac4d0;
+      border-radius: 8px;
+      font-family: "Inter", Helvetica;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: #8f0b09;
+      box-shadow: 0 0 0 3px rgba(143, 11, 9, 0.1);
+    }
+
+    .button-group {
+      margin-top: 30px;
+    }
+
+    .button {
+      width: 100%;
+      padding: 14px 20px;
+      background-color: #8f0b09;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .button:hover {
+      background-color: #770000;
+    }
+
+    .button:disabled {
+      background-color: #cca4a3;
+      cursor: not-allowed;
+    }
+
+    .button-text {
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .text-link {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .text-link a {
+      color: #8f0b09;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    .text-link a:hover {
+      text-decoration: underline;
+    }
+
+    .error-message {
+      background-color: #ffebee;
+      color: #c62828;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #8f0b09;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<main class="login">
+  <header class="rectangle"></header>
+
+  <section class="form-log-in" aria-labelledby="login-heading">
+    <h2 id="login-heading" class="form-title">Iniciar Sesión</h2>
+
+    <div id="errorMessage" class="error-message" role="alert"></div>
+
+    <form id="loginForm" novalidate>
+      <div class="input-field">
+        <label for="employee-code" class="label">Código de Empleado</label>
+        <input
+                type="text"
+                id="employee-code"
+                name="employee-code"
+                class="input"
+                placeholder="Ingrese su código"
+                required
+                aria-required="true"
+                autocomplete="username"
+        />
+      </div>
+
+      <div class="input-field">
+        <label for="password" class="label">Contraseña</label>
+        <input
+                type="password"
+                id="password"
+                name="password"
+                class="input"
+                placeholder="Ingrese su contraseña"
+                required
+                aria-required="true"
+                autocomplete="current-password"
+        />
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="button" id="loginButton">
+          <span class="button-text">Iniciar sesión</span>
+        </button>
+      </div>
+
+      <div class="loading" id="loadingIndicator">Validando credenciales...</div>
+    </form>
+
+    <div class="text-link">
+      <a href="#forgot-password">¿Olvidaste tu contraseña?</a>
+    </div>
+  </section>
+</main>
+
+<script>
+  const API_BASE_URL = 'http://localhost:8080';
+
+  // Referencias DOM
+  const loginForm = document.getElementById('loginForm');
+  const loginButton = document.getElementById('loginButton');
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  const errorMessage = document.getElementById('errorMessage');
+  const employeeCodeInput = document.getElementById('employee-code');
+  const passwordInput = document.getElementById('password');
+
+  function showError(message) {
+    errorMessage.textContent = message;
+    errorMessage.classList.add('show');
+    setTimeout(() => {
+      errorMessage.classList.remove('show');
+    }, 5000);
+  }
+
+  function saveUserSession(userData) {
+    // Guardar en sessionStorage (se borra al cerrar el navegador)
+    sessionStorage.setItem('user', JSON.stringify(userData));
+    sessionStorage.setItem('isAuthenticated', 'true');
+  }
+
+  function redirectByRole(role, userId) {
+    if (role === 'MANAGER') {
+      window.location.href = './manager/home.html';
+    } else if (role === 'DEVELOPER' || role === 'DESARROLLADOR') {
+      window.location.href = `./desarrollador/seleccion_proyectos.html?id=${userId}`;
+    } else {
+      showError('Rol de usuario no reconocido');
+    }
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const employeeCode = employeeCodeInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!employeeCode || !password) {
+      showError('Por favor complete todos los campos');
+      return;
+    }
+
+    loginButton.disabled = true;
+    loadingIndicator.style.display = 'block';
+    errorMessage.classList.remove('show');
+
+    try {
+
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employeeCode: employeeCode,
+          password: password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const userData = {
+          id: data.userId,
+          employeeCode: data.employeeCode,
+          name: data.name,
+          role: data.role,
+          token: data.token
+        };
+
+        saveUserSession(userData);
+        redirectByRole(data.role, data.userId);
+      } else {
+
+        showError(data.message || 'Credenciales inválidas');
+      }
+    } catch (error) {
+      console.error('Error al intentar iniciar sesión:', error);
+      showError('Error de conexión. Por favor intente nuevamente.');
+    } finally {
+
+      loginButton.disabled = false;
+      loadingIndicator.style.display = 'none';
+    }
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const isAuthenticated = sessionStorage.getItem('isAuthenticated');
+    if (isAuthenticated === 'true') {
+      const user = JSON.parse(sessionStorage.getItem('user'));
+      if (user) {
+        redirectByRole(user.role, user.id);
+      }
+    }
+  });
+
+</script>
+</body>
+</html>

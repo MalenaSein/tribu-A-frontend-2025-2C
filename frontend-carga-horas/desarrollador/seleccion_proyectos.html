@@ -4,9 +4,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8" />
     <title>Sistema de Gestión de Horas - Selección de Proyectos</title>
-    <link rel="stylesheet" href="/src/common/globals.css" />
-    <link rel="stylesheet" href="/src/common/styleguide.css" />
+    <link rel="stylesheet" href="../common/globals.css" />
+    <link rel="stylesheet" href="../common/styleguide.css" />
     <link rel="stylesheet" href="seleccion_proyectos.css" />
+    <script src="../config.js"></script>
+    <script src="../APIClient.js"></script>
   </head>
   <body>
     <main class="proyectos">
@@ -35,35 +37,42 @@
       </div>
       
       <div class="button-wrapper">
-        <a href="../index.html" class="button-2" type="button">
+        <a href="../login.html" class="button-2" type="button">
           <span class="button-3">Volver al Inicio</span>
         </a>
       </div>
     </main>
-
-    <script src="../APIClient.js"></script>
     <script>
       const parametros = new URLSearchParams(window.location.search);
       const idRecurso = parametros.get('id');
 
       let proyectos = [];
-      // cargar los proyectos
-      APIClient.getProjectsByEmployeeId(idRecurso).then( proyectos => {
 
-        console.log(proyectos);
-        const contenedorTarjetas = document.querySelector("#contenedor_tarjetas");
-            if(proyectos.length == 0) {
-              contenedorTarjetas.innerHTML = "no hay proyectos para este empleado";
-            } else {
-              proyectos.forEach(proyecto => {
-                contenedorTarjetas.innerHTML ="";
-                contenedorTarjetas.innerHTML += crearTarjeta(proyecto);
+      APIClient.getProjectsByEmployeeId(idRecurso)
+              .then(proyectos => {
+
+                if (!Array.isArray(proyectos)) {
+
+                  throw new Error("Formato de datos de proyectos inválido.");
+                }
+
+                console.log(proyectos);
+                const contenedorTarjetas = document.querySelector("#contenedor_tarjetas");
+
+                if(proyectos.length === 0) {
+                  contenedorTarjetas.innerHTML = "No hay proyectos para este empleado";
+                } else {
+                  contenedorTarjetas.innerHTML = "";
+                  proyectos.forEach(proyecto => {
+                    contenedorTarjetas.innerHTML += crearTarjeta(proyecto);
+                  });
+                }
+              })
+              .catch(error => {
+                console.error("Fallo al cargar proyectos (API o red):", error);
+                document.querySelector("#contenedor_tarjetas").innerHTML =
+                        `Error al cargar proyectos. Intente nuevamente. (${error.message || 'Error de red'})`;
               });
-
-            }
-
-
-      });
 
       function crearTarjeta(proyecto) {
         return `<article class="project-card">

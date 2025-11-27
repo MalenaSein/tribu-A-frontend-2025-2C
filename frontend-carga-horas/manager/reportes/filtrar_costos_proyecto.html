@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Costos por Proyecto</title>
+    <script src="../../auth-service.js"></script>
+    <script src="../../route-guard.js"></script>
+    <script src="../../config.js"></script>
+    <script src="../../APIClient.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background-color: #fef7ff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #8f0b09;
+            margin-bottom: 20px;
+        }
+        .project-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        select {
+            width: 250px;
+            padding: 8px 12px;
+            border: 1px solid #cac4d0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #8f0b09;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #770000;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .back-button {
+            background-color: #cca4a3;
+            color: #000;
+            margin-bottom: 20px;
+        }
+        .back-button:hover {
+            background-color: #b89392;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .card-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #8f0b09;
+            margin-top: 5px;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #964141;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        tr:hover {
+            background-color: #fafafa;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+<button class="back-button" onclick="window.location.href='reporte_costos_por_proyecto.html'">
+    ← Volver a lista de proyectos
+</button>
+
+<h1>Reporte de Costos por Proyecto</h1>
+
+<div class="project-info">
+    <strong>Proyecto:</strong> <span id="projectName"></span><br>
+    <strong>ID:</strong> <span id="projectId"></span>
+</div>
+
+<div class="filters">
+    <div class="filter-row">
+        <div>
+            <label for="monthSelect">Seleccionar Mes:</label>
+            <select id="monthSelect"></select>
+        </div>
+        <button id="generateBtn" onclick="generarReporte()">Generar Reporte</button>
+    </div>
+</div>
+
+<div id="loading" class="loading" style="display: none;">
+    Cargando reporte...
+</div>
+
+<div id="reportContainer" style="display: none;"></div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const projectId = params.get('id');
+    const projectName = params.get('name');
+
+    if (!projectId) {
+        alert('No se especificó un proyecto');
+        window.location.href = 'reporte_costos_por_proyecto.html';
+    }
+
+    document.getElementById('projectId').textContent = projectId;
+    document.getElementById('projectName').textContent = projectName || 'Sin nombre';
+
+    function generarOpcionesMeses() {
+        const select = document.getElementById('monthSelect');
+        const today = new Date();
+
+        for (let i = 0; i < 12; i++) {
+            const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const value = date.toISOString().split('T')[0]; // YYYY-MM-DD
+            const text = date.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = text.charAt(0).toUpperCase() + text.slice(1);
+            select.appendChild(option);
+        }
+    }
+
+    generarOpcionesMeses();
+
+    async function generarReporte() {
+        const month = document.getElementById('monthSelect').value;
+
+        if (!month) {
+            alert('Por favor seleccione un mes');
+            return;
+        }
+
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('reportContainer').style.display = 'none';
+        document.getElementById('generateBtn').disabled = true;
+
+        try {
+            const reporte = await APIClient.getProjectResourcesReport(projectId, month);
+
+            if (!reporte || !reporte.resourceSummaries || reporte.resourceSummaries.length === 0) {
+                mostrarSinDatos();
+                return;
+            }
+
+            mostrarReporte(reporte);
+        } catch (error) {
+            console.error('Error al generar reporte:', error);
+            alert('Error al generar el reporte. Por favor intente nuevamente.');
+        } finally {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('generateBtn').disabled = true;
+        }
+    }
+
+    function mostrarReporte(reporte) {
+        const container = document.getElementById('reportContainer');
+
+        let html = `
+                <div class="summary-cards">
+                    <div class="card">
+                        <div class="card-label">Costo Total</div>
+                        <div class="card-value">$${reporte.totalCost.toFixed(2)}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Horas Totales</div>
+                        <div class="card-value">${reporte.totalHours.toFixed(2)} hs</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Recursos</div>
+                        <div class="card-value">${reporte.resourceSummaries.length}</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-label">Cliente</div>
+                        <div class="card-value" style="font-size: 18px;">${reporte.clientName}</div>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Empleado</th>
+                            <th>Rol</th>
+                            <th>Experiencia</th>
+                            <th>Horas</th>
+                            <th>Tarifa/Hora</th>
+                            <th>Costo Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+        reporte.resourceSummaries.forEach(resource => {
+            html += `
+                    <tr>
+                        <td>${resource.employeeName}</td>
+                        <td>${resource.rolName}</td>
+                        <td>${resource.rolExperience}</td>
+                        <td>${resource.hoursWorked.toFixed(2)}</td>
+                        <td>$${resource.hourlyRate.toFixed(2)}</td>
+                        <td><strong>$${resource.totalCost.toFixed(2)}</strong></td>
+                    </tr>
+                `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            `;
+
+        container.innerHTML = html;
+        container.style.display = 'block';
+    }
+
+    function mostrarSinDatos() {
+        const container = document.getElementById('reportContainer');
+        container.innerHTML = `
+                <div class="no-data">
+                    <h3>No hay datos disponibles</h3>
+                    <p>No se encontraron recursos asignados a este proyecto en el mes seleccionado.</p>
+                </div>
+            `;
+        container.style.display = 'block';
+    }
+</script>
+</body>
+</html>
