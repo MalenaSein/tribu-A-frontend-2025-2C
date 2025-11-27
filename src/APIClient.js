@@ -26,7 +26,11 @@ let APIClient = {
       return getData(URL_BASE + ENDPOINT_PROYECTOS + ENDPOINT_RECURSOS + "/" + id)
       // return getData(URL_BASE + ENDPOINT_PROYECTOS )
       
+    },
+    getTasksByProjectAndResource: async function (projectId, resourceId) {
+      return getData(`${URL_BASE}${ENDPOINT_PROYECTOS}/${projectId}/tasks/${resourceId}`)
     }
+
 }
 
 

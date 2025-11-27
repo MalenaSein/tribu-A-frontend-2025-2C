@@ -29,7 +29,7 @@
           <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="white">
             <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
           </svg>
-          <h2 class="text-wrapper-2" id="proyecto1">Proyecto: Nombre del Proyecto</h2>
+          <h2 class="text-wrapper-2">Proyecto: <span id="titulo_proyecto">Nombre del Proyecto</span></h2>
           <div class="select-field">
             <label for="week-select" style="position: absolute; width: 1px; height: 1px; overflow: hidden;">Seleccione su semana</label>
             <select id="week-select" class="select" name="week">
@@ -43,7 +43,7 @@
       </section>
       
       <!-- TABLA DE HORAS -->
-      <section class="hours-table-section">
+      <section class="hours-table-section" id="tabla_de_horas">
         <form class="table-basic" aria-label="Tabla de carga de horas">
           <div class="table" role="grid" aria-label="Horas por tarea y día" id="tasksTable">
             <!-- HEADER DE LA TABLA -->
@@ -117,7 +117,7 @@
       </section>
       
       <!-- FOOTER DEL PROYECTO -->
-      <footer class="project-footer">
+      <!-- <footer class="project-footer">
         <div class="div">
           <svg class="folder-2" width="24" height="24" viewBox="0 0 24 24" fill="white">
             <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
@@ -132,19 +132,19 @@
             <span> / 40h asignadas</span>
           </p>
         </div>
-      </footer>
+      </footer> -->
       
       <!-- BOTONES DE ACCIÓN -->
       <div class="action-buttons">
-        <button type="button" class="button-5" id="addTaskBtn">
+        <!-- <button type="button" class="button-5" id="addTaskBtn">
           <span>+ Agregar Tarea</span>
-        </button>
+        </button> -->
         <button type="button" class="button-4">
           <span>Cancelar</span>
         </button>
-        <button type="submit" class="button-2">
+        <!-- <button type="submit" class="button-2">
           <span>Guardar Cambios</span>
-        </button>
+        </button> -->
       </div>
     </main>
 
@@ -382,23 +382,37 @@
       renderTasks();
     </script>
 
+    <script src="../APIClient.js"></script>
     <script>
-      let p1 = document.querySelector("#proyecto1");
 
-      // cargar los proyectos
-      let proyectosConTareas = getData();
-      // poner los nombres al menos por ahora
-      proyectosConTareas.then(p => {
-        console.log(p)
-        p1.innerHTML =  `Proyecto: ${p[0].nombre}`;
-        // poner el nombre de una tarea
-        t1 = document.querySelector("[data-task-id='1'] > div > span");
-        t2 = document.querySelector("[data-task-id='2'] > div > span");
-        t3 = document.querySelector("[data-task-id='3'] > div > span");
-        console.log(t1)
-        t1.innerHTML = p[0].tasks[0].nombre;
-        t2.innerHTML = p[0].tasks[1].nombre;
-        t3.innerHTML = p[0].tasks[2].nombre;
+    
+    const parametros = new URLSearchParams(window.location.search);
+    const idProyecto = parametros.get('projectId');
+    const idRecurso = parametros.get('resourceId');
+    const nombreProyecto = parametros.get('projectName');
+    const tituloProyecto = document.querySelector("#titulo_proyecto");
+    tituloProyecto.innerHTML = nombreProyecto;
+    // ocultar la tabla de horas hasta que definamos si la hacemos asi
+    const tablaDeHoras = document.querySelector("#tabla_de_horas");
+    tablaDeHoras.style.innerHTML = '';
+      // console.log(idProyecto);
+      // console.log(idRecurso);
+      APIClient.getTasksByProjectAndResource(idProyecto, idRecurso).then(tareas => {
+        tablaDeHoras.innerHTML = `<h2> lista de tareas del proyecto <bold>${nombreProyecto}</bold> asignadas a ti</h2>`;
+        tablaDeHoras.innerHTML += '<ul>';
+        tareas.forEach( tarea => {
+        tablaDeHoras.innerHTML += `<li>
+          nombre: ${tarea.nombre}
+          <form>
+            cantidad horas: <input type='number' min='0.5' max='40'/>
+            <button class='button-2' type='submit'>guardar cambios</button>
+          </form>
+          </li>`;
+
+        });
+        tablaDeHoras.innerHTML += '</ul>';
+
+        console.log(tareas);
       });
     </script>
   </body>
