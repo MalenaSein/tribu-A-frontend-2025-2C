@@ -43,14 +43,16 @@ async function getData(url) {
     try {
       const response = await fetch(url );
       if (!response.ok) {
-        throw new Error(`hubo un error, Response status: ${response.status}`);
+        error = new Error(`hubo un error, Response status: ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
   
       const result = await response.json();
-    //   console.log("los resultados son...", result);
+      console.log("los resultados son...", result);
       return result;
     } catch (error) {
-      console.error(error.message);
+      return error;
     }
 }
 
