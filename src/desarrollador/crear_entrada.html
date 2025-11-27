@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <div id="msg"></div>
+
+    <script src="../APIClient.js"></script>
+    <script>
+
+    const parametros = new URLSearchParams(window.location.search);
+    const nombreProyecto = parametros.get('projectName');
+
+    const codigoEmpleado = parametros.get('codigoEmpleado');
+    const fechaHoraCarga = parametros.get('fechaHoraCarga');
+    const fecha = parametros.get('fecha');
+    const proyecto = parametros.get('proyecto');
+    const tarea = parametros.get('tarea');
+    const horas = parametros.get('horas');
+    const status = 'DRAFT';
+    const observaciones = '';
+
+    const newTimeEntry = createTimeEntryJson(codigoEmpleado, new Date(fecha), proyecto, 
+        tarea, horas, status, observaciones
+    );
+
+    const msg = document.querySelector("#msg");
+    APIClient.createTimeEntry(newTimeEntry).then(response => {
+        
+        // esto del status hay que reverlo porque deberia contrastar con el
+        // http status pero el json lo sobreescribe
+        if(response.status==status) {
+            msg.innerHTML = "<h1>entrada creada</h1><a href='entrada_codigo.html'>volver</a>"
+        } else {
+            msg.innerHTML = "<h1>Algo salio mal</h1><a href='entrada_codigo.html'>volver</a>"
+            
+        }
+    });
+</script>
+</body>
+</html>

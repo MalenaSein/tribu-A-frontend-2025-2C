@@ -403,10 +403,22 @@
         tareas.forEach( tarea => {
         tablaDeHoras.innerHTML += `<li>
           nombre: ${tarea.nombre}
-          <form>
-            cantidad horas: <input type='number' min='0.5' max='40'/>
-            <button class='button-2' type='submit'>guardar cambios</button>
+          <form id=${tarea.id} method='get' action='crear_entrada.html'>
+
+            cantidad horas: 
+            <input type='number' min='0.5' max='40' step='0.5' name='horas' />
+            <input name='fecha' value='2023-01-01' hidden>
+            <input name='codigoEmpleado' value='${idRecurso}' hidden>
+            <input name='fechaHoraCarga' value='2023-01-01' hidden>
+            <input name='proyecto' value='${idProyecto}' hidden>
+            <input name='tarea' value='${tarea.id}' hidden>
+
+            <button class='button-2' type='submit' data-item-id=${tarea.id}>agregar horas</button>
           </form>
+          <form action='modificar_entrada_horas.html?id=${tarea.id}'>
+            <button class='button-2' type='submit'>modificar horas</button>
+          </form>
+          <hr>
           </li>`;
 
         });

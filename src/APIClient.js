@@ -29,6 +29,10 @@ let APIClient = {
     },
     getTasksByProjectAndResource: async function (projectId, resourceId) {
       return getData(`${URL_BASE}${ENDPOINT_PROYECTOS}/${projectId}/tasks/${resourceId}`)
+    },
+
+    createTimeEntry: async function(data) {
+      return postData(`${URL_BASE}/time-entries`, data);
     }
 
 }
@@ -48,4 +52,39 @@ async function getData(url) {
     } catch (error) {
       console.error(error.message);
     }
+}
+
+async function postData(url, data) {
+  const options = {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+};
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      throw new Error(`hubo un error, Response status: ${response.status}`);
+    }
+
+    const result = await response.json();
+  //   console.log("los resultados son...", result);
+    return result;
+  } catch (error) {
+    console.error(error.message);
   }
+}
+
+function createTimeEntryJson(codigoEmpleado, fecha, proyecto, tarea, horas, status, observaciones) {
+  return {
+    codigoEmpleado: codigoEmpleado,
+    // fechaHoraCarga: fechaHoraCarga ,
+    fecha: fecha,
+    proyecto: proyecto,
+    tarea: tarea,
+    horas: horas,
+    status: status,
+    observaciones: observaciones
+  }
+}
