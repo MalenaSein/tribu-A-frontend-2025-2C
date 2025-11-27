@@ -594,3 +594,165 @@ html, body {
     margin-top: 10px;
   }
 }
+
+/*Tareas provenientes de API*/
+
+#tabla_de_horas {
+  width: 100%;
+  max-width: 900px;
+  margin: 20px auto 0;
+  padding: 0 20px;
+}
+
+/* Título "Lista de tareas..." */
+#tabla_de_horas > h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 20px;
+  background-color: #964141;
+  border-radius: 300px;
+  box-shadow: 0px 4px 4px #00000040;
+  font-family: "Inter", Helvetica, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #ffffff;
+  margin: 0 0 16px 0;
+}
+
+#tabla_de_horas h2 bold {
+  font-weight: 700;
+  font-size: 1.1em;
+  color: #fff;
+}
+
+/* Lista de tareas */
+#tabla_de_horas > ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cada tarea como tarjeta */
+.item-con-contenido {
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #b9b9b9;
+  box-shadow: 0px 4px 4px #00000040;
+  padding: 12px 16px;
+  font-family: "Inter", Helvetica, sans-serif;
+  font-size: 14px;
+  color: #000000;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Etiqueta "nombre:" */
+.fila-superior-label span {
+  font-weight: bold; 
+  font-size: 16px;   
+  color: #000;       
+}
+
+/* Contenedor de la fila inferior (nombre de tarea, input y botones) */
+.fila-inferior-grid {
+  display: grid;
+  grid-template-columns: 1fr auto; 
+  align-items: center; 
+  gap: 20px; 
+}
+
+/* Nombre de la tarea */
+.area-nombre-tarea span {
+  font-size: 16px; 
+  font-weight: normal; 
+  display: block;
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap; 
+}
+
+/* Contenedor input y botones */
+.area-acciones {
+    display: flex;
+    flex-wrap: wrap; 
+    align-items: center;
+    gap: 10px; 
+    justify-content: flex-end; 
+}
+
+/* Contenedor input y su texto */
+.area-input {
+  display: flex;
+  align-items: center;
+  gap: 8px; 
+}
+
+/* Input de horas */
+#tabla_de_horas > ul > li input[type="number"] {
+  min-width: 100px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #cac4d0;
+  font-family: "Inter", Helvetica, sans-serif;
+  font-size: 14px;
+}
+
+.area-input form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Separador entre tareas */
+#tabla_de_horas > ul > li hr {
+  margin-top: 12px;
+  border: none;
+  border-top: 1px solid #e0e0e0;
+}
+
+/* Botones */
+#tabla_de_horas .button-2 {
+  margin-top: 0;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  #tabla_de_horas {
+    max-width: 100%;
+    padding: 0 15px;
+  }
+
+  #tabla_de_horas > h2 {
+    border-radius: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .fila-inferior-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .area-acciones, .area-input, .area-modificar, .area-input form {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .area-nombre-tarea span {
+      white-space: normal; 
+  }
+
+  #tabla_de_horas > ul > li input[type="number"] {
+    width: 100%;
+    max-width: none;
+  }
+}
