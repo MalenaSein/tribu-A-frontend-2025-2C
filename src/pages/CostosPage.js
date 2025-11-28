@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter, Percent } from 'lucide-react';
+import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter, Layers } from 'lucide-react';
 import { ApiService } from '../services/api';
 
 const CostosPage = () => {
     const navigate = useNavigate(); 
     const [costos, setCostos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Modales
+    const [isModalOpen, setIsModalOpen] = useState(false);          // Modal individual
+    const [isMassModalOpen, setIsMassModalOpen] = useState(false);  // Modal masivo
 
     // Estado para los filtros de visualización
     const [filtroMes, setFiltroMes] = useState(new Date().getMonth() + 1);
     const [filtroAnio, setFiltroAnio] = useState(new Date().getFullYear());
 
+    // Estado del formulario individual
     const [formData, setFormData] = useState({
         rol: '',
         seniority: '',
@@ -22,11 +26,17 @@ const CostosPage = () => {
         anio: new Date().getFullYear()
     });
 
-    // Estado para el ajuste por porcentaje
+    // Estado del formulario masivo
+    const [massFormData, setMassFormData] = useState({
+        mes: new Date().getMonth() + 1,
+        anio: new Date().getFullYear(),
+        porcentaje: ''
+    });
+
+    // Estado para edición individual
     const [usarPorcentaje, setUsarPorcentaje] = useState(false);
     const [porcentaje, setPorcentaje] = useState('');
     const [costoBase, setCostoBase] = useState(0);
-
     const [editingId, setEditingId] = useState(null);
 
     const MESES = [
@@ -76,7 +86,6 @@ const CostosPage = () => {
         const partes = c.fecha.split('-');
         const anioCosto = parseInt(partes[0]);
         const mesCosto = parseInt(partes[1]);
-
         return anioCosto === parseInt(filtroAnio) && mesCosto === parseInt(filtroMes)
     });
 
@@ -89,7 +98,7 @@ const CostosPage = () => {
         return resultado.toFixed(2); // Redondeo a 2 decimales
     };
 
-    // Efecto para actualizar el campo "Costo" cuando cambia el porcentaje
+    // Efecto para edición individual
     useEffect(() => {
         if (usarPorcentaje && editingId) {
             const nuevoValor = calcularValorConPorcentaje(costoBase, porcentaje);
@@ -97,6 +106,7 @@ const CostosPage = () => {
         }
     }, [porcentaje, usarPorcentaje, costoBase, editingId]);
 
+    // MANEJO DE EDICIÓN INDIVIDIAL 
     const handleEdit = (item) => {
         setEditingId(item.id);
 
@@ -175,6 +185,61 @@ const CostosPage = () => {
         setIsModalOpen(true);
     };
 
+    // MANEJO DE AJUSTE MASIVO
+    const handleMassUpdate = async (e) => {
+        e.preventDefault();
+
+        // 1) Identificar costos a afectar
+        const costosAfectados = costos.filter(c => {
+            if (!c.fecha) return false;
+            const partes = c.fecha.split('-');
+            const anioCosto = parseInt(partes[0]);
+            const mesCosto = parseInt(partes[1]);
+            return anioCosto === parseInt(massFormData.anio) && mesCosto === parseInt(massFormData.mes);
+        });
+
+        if (costosAfectados.length === 0) {
+            alert("No hay costos registrados para el mes seleccionado");
+            return;
+        }
+
+        if (!window.confirm(`Se actualizarán ${costosAfectados.length} costos con un ${massFormData.porcentaje}%. Continuar?`)) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // 2) Iterar y actualizar uno por uno
+            const promesas = costosAfectados.map(costo => {
+                const nuevoValor = calcularValorConPorcentaje(costo.costo, massFormData.porcentaje);
+
+                // Reconstruimos el objeto para el backend
+                const datosCosto = {
+                    rolId: costo.rolDisplay, // Usamos el valor visual procesado
+                    seniority: costo.seniorityDisplay !== 'N/A' ? costo.seniorityDisplay : '',
+                    costo: nuevoValor.toString(),
+                    mes: parseInt(massFormData.mes),
+                    anio: parseInt(massFormData.anio)
+                };
+
+                return ApiService.actualizarCosto(costo.id, datosCosto);
+            });
+
+            await Promise.all(promesas);
+
+            alert("Actualización masiva completada con éxito");
+            setIsMassModalOpen(false);
+            setFiltroMes(parseInt(massFormData.mes));
+            setFiltroAnio(parseInt(massFormData.anio));
+            loadData();
+
+        } catch (error) {
+            console.error("Error en actualización masiva:", error);
+            alert("Ocurrió un error durante la actualización masiva. Algunos costos pueden no haberse actualizado");
+            loadData();
+        }
+    };
+
     // Funcion auxiliar para formatear la fecha visualmente en la tabla
     const formatVigencia = (fechaString) => {
         if (!fechaString) return '-';
@@ -248,12 +313,29 @@ const CostosPage = () => {
                         </div>
                     </div>
 
-                    <button 
-                        onClick={handleNuevoCosto} 
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition w-full md:w-auto justify-center"
-                    >
-                        <Plus size={18} /> Nueva Tarifa
-                    </button>
+                    <div className="flex gap-2 w-full md:w-auto">
+                        {/* BOTÓN DE AJUSTE MASIVO */}
+                        <button 
+                            onClick={() => {
+                                setMassFormData({
+                                    mes: filtroMes, // Pre-carga con lo que se ve
+                                    anio: filtroAnio,
+                                    porcentaje: ''
+                                });
+                                setIsMassModalOpen(true);
+                            }} 
+                            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition justify-center text-sm"
+                        >
+                            <Layers size={18} /> Ajuste Masivo
+                        </button>
+
+                        <button 
+                            onClick={handleNuevoCosto} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition justify-center text-sm"
+                        >
+                            <Plus size={18} /> Nueva Tarifa
+                        </button>
+                    </div>
                 </div>
 
                 {/* TABLA */}
@@ -313,7 +395,7 @@ const CostosPage = () => {
                 </div>
             </main>
 
-            {/* MODAL */}
+            {/* MODAL INDIVIDUAL (CREAR/EDITAR) */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
@@ -321,17 +403,95 @@ const CostosPage = () => {
                             {editingId ? 'Editar Costo Mensual' : 'Registrar Costo Mensual'}
                         </h3>
                         <form onSubmit={handleSave} className="space-y-4">
+                             {/* Campos del formulario individual */}
                              <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                <div>
+                                    <label className="block text-xs text-gray-600 mb-1 font-bold uppercase">Mes</label>
+                                    <select className="w-full border border-gray-300 rounded-lg p-2 text-sm" value={formData.mes} onChange={e => setFormData({...formData, mes: e.target.value})}>
+                                        {MESES.map(m => (<option key={m.id} value={m.id}>{m.nombre}</option>))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-600 mb-1 font-bold uppercase">Año</label>
+                                    <input type="number" className="w-full border border-gray-300 rounded-lg p-2 text-sm" min="2020" max="2030" value={formData.anio} onChange={e => setFormData({...formData, anio: e.target.value})}/>
+                                </div>
+                             </div>
+                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+                                <select className={`w-full border rounded-lg p-2 ${editingId ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-300'}`} required value={formData.rol} onChange={e => setFormData({...formData, rol: e.target.value})} disabled={!!editingId}>
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Desarrollador">Desarrollador</option>
+                                    <option value="Analista">Analista</option>
+                                    <option value="Project Manager">Project Manager</option>
+                                </select>
+                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
+                                    <select className={`w-full border rounded-lg p-2 ${editingId ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-300'}`} value={formData.seniority} onChange={e => setFormData({...formData, seniority: e.target.value})} disabled={!!editingId}>
+                                        <option value="">Nivel...</option>
+                                        <option value="Junior">Junior</option>
+                                        <option value="Semi-Senior">Semi-Senior</option>
+                                        <option value="Senior">Senior</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Costo (USD)</label>
+                                    <input type="number" className={`w-full border rounded-lg p-2 ${usarPorcentaje ? 'bg-gray-100' : 'border-gray-300'}`} required value={formData.costo} readOnly={usarPorcentaje} onChange={e => setFormData({...formData, costo: e.target.value})}/>
+                                </div>
+                             </div>
+                             {/* Sección Porcentaje Individual (Solo Editar) */}
+                             {editingId && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <input type="checkbox" id="usarPorcentaje" checked={usarPorcentaje} onChange={(e) => {setUsarPorcentaje(e.target.checked); if (!e.target.checked) {setFormData(prev => ({ ...prev, costo: costoBase })); setPorcentaje('');}}} className="w-4 h-4 text-blue-600 rounded"/>
+                                        <label htmlFor="usarPorcentaje" className="text-sm font-medium text-gray-700">Ajustar por porcentaje</label>
+                                    </div>
+                                    {usarPorcentaje && (
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative w-1/2">
+                                                <input type="number" className="w-full border border-gray-300 rounded-lg p-2 pr-8" value={porcentaje} onChange={(e) => setPorcentaje(e.target.value)}/>
+                                                <span className="absolute right-3 top-2 text-gray-500">%</span>
+                                            </div>
+                                            <div className="text-xs text-gray-500">Base: <strong>${costoBase}</strong> → Nuevo: <strong>${formData.costo}</strong></div>
+                                        </div>
+                                    )}
+                                </div>
+                             )}
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Cancelar</button>
+                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">{editingId ? 'Guardar' : 'Crear'}</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL DE AJUSTE MASIVO */}
+            {isMassModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-fade-in border-t-4 border-purple-500">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-purple-100 rounded-full">
+                                <Layers className="h-6 w-6 text-purple-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-800">Ajuste Masivo de Costos</h3>
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-6">
+                            Esta acción actualizará <strong>todos</strong> los costos registrados para el mes seleccionado aplicando el porcentaje indicado.
+                        </p>
+
+                        <form onSubmit={handleMassUpdate} className="space-y-5">
+                             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                                 <div>
                                     <label className="block text-xs text-gray-600 mb-1 font-bold uppercase">Mes</label>
                                     <select 
                                         className="w-full border border-gray-300 rounded-lg p-2 text-sm"
-                                        value={formData.mes}
-                                        onChange={e => setFormData({...formData, mes: e.target.value})}
+                                        value={massFormData.mes}
+                                        onChange={e => setMassFormData({...massFormData, mes: e.target.value})}
                                     >
-                                        {MESES.map(m => (
-                                            <option key={m.id} value={m.id}>{m.nombre}</option>
-                                        ))}
+                                        {MESES.map(m => (<option key={m.id} value={m.id}>{m.nombre}</option>))}
                                     </select>
                                 </div>
                                 <div>
@@ -341,123 +501,34 @@ const CostosPage = () => {
                                         className="w-full border border-gray-300 rounded-lg p-2 text-sm"
                                         min="2020"
                                         max="2030"
-                                        value={formData.anio}
-                                        onChange={e => setFormData({...formData, anio: e.target.value})}
+                                        value={massFormData.anio}
+                                        onChange={e => setMassFormData({...massFormData, anio: e.target.value})}
                                     />
                                 </div>
                              </div>
 
                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                                <select 
-                                    className={`w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                        editingId ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'border-gray-300'
-                                    }`}
-                                    required 
-                                    value={formData.rol}
-                                    onChange={e => setFormData({...formData, rol: e.target.value})}
-                                    disabled={!!editingId} // Bloqueado si estamos editando
-                                >
-                                    <option value="">Seleccionar...</option>
-                                    <option value="Desarrollador">Desarrollador</option>
-                                    <option value="Analista">Analista</option>
-                                    <option value="Project Manager">Project Manager</option>
-                                </select>
-                             </div>
-                             
-                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
-                                    <select 
-                                        className={`w-full border rounded-lg p-2 ${
-                                            editingId ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'border-gray-300'
-                                        }`}
-                                        value={formData.seniority}
-                                        onChange={e => setFormData({...formData, seniority: e.target.value})}
-                                        disabled={!!editingId} // Bloqueado si estamos editando
-                                    >
-                                        <option value="">Nivel...</option>
-                                        <option value="Junior">Junior</option>
-                                        <option value="Semi-Senior">Semi-Senior</option>
-                                        <option value="Senior">Senior</option>
-                                    </select>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Porcentaje de Ajuste</label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" 
+                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-lg"
+                                        required 
+                                        placeholder="Ej: 20 o -5"
+                                        value={massFormData.porcentaje}
+                                        onChange={e => setMassFormData({...massFormData, porcentaje: e.target.value})}
+                                    />
+                                    <span className="absolute right-4 top-3.5 text-gray-500 font-bold">%</span>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Costo (USD)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-2 text-gray-500">$</span>
-                                        <input 
-                                            type="number" 
-                                            className={`w-full border rounded-lg p-2 pl-6 focus:ring-2 focus:ring-blue-500 ${
-                                                usarPorcentaje ? 'bg-gray-100 text-gray-500' : 'border-gray-300'
-                                            }`}
-                                            required 
-                                            placeholder="0.00"
-                                            value={formData.costo}
-                                            readOnly={usarPorcentaje} // Bloqueado si se usa porcentaje
-                                            onChange={e => setFormData({...formData, costo: e.target.value})}
-                                        />
-                                    </div>
-                                </div>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    * Use valores positivos para aumentos (ej: 20) y negativos para descuentos (ej: -10).
+                                </p>
                              </div>
 
-                             {/* SECCIÓN DE AJUSTE POR PORCENTAJE (SOLO EN EDICIÓN) */}
-                             {editingId && (
-                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <input 
-                                                type="checkbox" 
-                                                id="usarPorcentaje"
-                                                checked={usarPorcentaje}
-                                                onChange={(e) => {
-                                                    setUsarPorcentaje(e.target.checked);
-                                                    if (!e.target.checked) {
-                                                        // Si desmarca, volvemos al valor original
-                                                        setFormData(prev => ({ ...prev, costo: costoBase }));
-                                                        setPorcentaje('');
-                                                    }
-                                                }}
-                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                            />
-                                            <label htmlFor="usarPorcentaje" className="text-sm font-medium text-gray-700 cursor-pointer">
-                                                Ajustar por porcentaje
-                                            </label>
-                                        </div>
-                                        <Percent className="h-4 w-4 text-gray-400" />
-                                    </div>
-                                    
-                                    {usarPorcentaje && (
-                                        <div className="animate-fade-in">
-                                            <div className="flex items-center gap-3">
-                                                <div className="relative w-1/2">
-                                                    <input 
-                                                        type="number" 
-                                                        placeholder="Ej: 10"
-                                                        className="w-full border border-gray-300 rounded-lg p-2 pr-8"
-                                                        value={porcentaje}
-                                                        onChange={(e) => setPorcentaje(e.target.value)}
-                                                    />
-                                                    <span className="absolute right-3 top-2 text-gray-500">%</span>
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    Valor base: <strong>${costoBase}</strong>
-                                                    <br/>
-                                                    Nuevo valor: <strong>${formData.costo}</strong>
-                                                </div>
-                                            </div>
-                                            <p className="text-xs text-blue-600 mt-2">
-                                                * Ingrese valores negativos (ej: -10) para descuentos.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                             )}
-
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Cancelar</button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm">
-                                    {editingId ? 'Guardar Cambios' : 'Crear Costo'}
+                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                                <button type="button" onClick={() => setIsMassModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Cancelar</button>
+                                <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium shadow-sm">
+                                    Aplicar Ajuste
                                 </button>
                             </div>
                         </form>
