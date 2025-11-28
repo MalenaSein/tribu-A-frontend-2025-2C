@@ -1,0 +1,380 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; 
+import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter } from 'lucide-react';
+import { ApiService } from '../services/api';
+
+const CostosPage = () => {
+    const navigate = useNavigate(); 
+    const [costos, setCostos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [filtroMes, setFiltroMes] = useState(new Date().getMonth() + 1);
+    const [filtroAnio, setFiltroAnio] = useState(new Date().getFullYear());
+
+    const [formData, setFormData] = useState({
+        rol: '',
+        seniority: '',
+        costo: '',
+        moneda: 'USD',
+        mes: new Date().getMonth() + 1,
+        anio: new Date().getFullYear()
+    });
+
+    const [editingId, setEditingId] = useState(null);
+
+    const MESES = [
+        { id: 1, nombre: 'Enero' }, { id: 2, nombre: 'Febrero' }, { id: 3, nombre: 'Marzo' },
+        { id: 4, nombre: 'Abril' }, { id: 5, nombre: 'Mayo' }, { id: 6, nombre: 'Junio' },
+        { id: 7, nombre: 'Julio' }, { id: 8, nombre: 'Agosto' }, { id: 9, nombre: 'Septiembre' },
+        { id: 10, nombre: 'Octubre' }, { id: 11, nombre: 'Noviembre' }, { id: 12, nombre: 'Diciembre' }
+    ];
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const data = await ApiService.obtenerCostosVigentes();
+
+            const datosProcesados = data.map(item => {
+                // Lógica visual para separar Rol de Seniority si vienen juntos
+                const rolCompleto = item.rolId || item.rol || '';
+                let rolDisplay = rolCompleto;
+                let seniorityDisplay = item.seniority || 'N/A';
+
+                // Lógica de separación simple para corregir la visualización
+                if ((!item.seniority || item.seniority === 'N/A') && rolCompleto.includes(' ')) {
+                    const partes = rolCompleto.split(' ');
+                    const posibleSeniority = partes[partes.length - 1];
+                    if (['Senior', 'Semi-Senior', 'Junior'].includes(posibleSeniority)) {
+                        seniorityDisplay = posibleSeniority;
+                        rolDisplay = partes.slice(0, -1).join(' ');
+                    }
+                }
+                
+                return { ...item, rolDisplay, seniorityDisplay };
+            });
+            
+            setCostos(datosProcesados);
+        } catch (error) {
+            console.error("Error cargando costos", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    const costosFiltrados = costos.filter(c => {
+        if(!c.fecha) return false;
+        // c.fecha viene como "YYYY-MM-DD"
+        const partes = c.fecha.split('-');
+        const anioCosto = parseInt(partes[0]);
+        const mesCosto = parseInt(partes[1]);
+
+        return anioCosto === parseInt(filtroAnio) && mesCosto === parseInt(filtroMes)
+    });
+
+    const handleEdit = (item) => {
+        setEditingId(item.id);
+
+        // Extraer Mes y Año de la fecha que viene de la API
+        let mesEdit = new Date().getMonth() + 1;
+        let anioEdit = new Date().getFullYear();
+
+        if (item.fecha) {
+            const partes = item.fecha.split('-');
+            if (partes.length >= 2) {
+                anioEdit = parseInt(partes[0]);
+                mesEdit = parseInt(partes[1]);
+            }
+        }
+
+        setFormData({
+            rol: item.rolDisplay, 
+            seniority: item.seniorityDisplay !== 'N/A' ? item.seniorityDisplay : '', 
+            costo: item.costo,
+            moneda: 'USD',
+            mes: mesEdit,
+            anio: anioEdit
+        });
+        setIsModalOpen(true);
+    };
+
+    const handleSave = async (e) => {
+        e.preventDefault();
+        
+        const datosCosto = { 
+            rolId: formData.rol, 
+            seniority: formData.seniority,
+            costo: formData.costo.toString(),
+            mes: parseInt(formData.mes),
+            anio: parseInt(formData.anio)
+        };
+
+        try {
+            if (editingId) {
+                // SI TENEMOS ID, ES UNA EDICIÓN (PUT)
+                await ApiService.actualizarCosto(editingId, datosCosto);
+                alert("Costo mensual actualizado correctamente");
+            } else {
+                // SI NO, ES UNA CREACIÓN (POST)
+                await ApiService.crearCosto(datosCosto);
+                alert("Nueva costo mensual registrado");
+            }
+            
+            setIsModalOpen(false);
+            setEditingId(null); // Limpiamos el ID de edición
+            
+            setFiltroMes(parseInt(formData.mes));
+            setFiltroAnio(parseInt(formData.anio));
+
+            loadData();
+        } catch(e) { 
+            alert("Error al guardar la operación. Verifique los datos"); 
+        }
+    };
+
+    // Funcion auxiliar para formatear la fecha visualmente en la tabla
+    const formatVigencia = (fechaString) => {
+        if (!fechaString) return '-';
+        const partes = fechaString.split('-');
+        if (partes.length < 2) return fechaString;
+        const anio = partes[0];
+        const mesIndex = parseInt(partes[1]) - 1;
+        const nombreMes = MESES[mesIndex] ? MESES[mesIndex].nombre : partes[1];
+        return `${nombreMes} ${anio}`;
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+            
+            {/* HEADER */}
+            <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center gap-4">
+                            <button 
+                                onClick={() => navigate('/dashboard')}
+                                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
+                                title="Volver al Menú"
+                            >
+                                <ArrowLeft className="h-6 w-6" />
+                            </button>
+                            <div className="flex items-center space-x-2 border-l border-gray-200 pl-4 h-8">
+                                <span className="text-xl font-bold tracking-tight text-gray-900">Gestión de Costos</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <span className="hidden sm:block font-medium text-gray-500">José Ratio</span>
+                            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">JR</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* CONTENIDO */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                
+                {/* BARRA DE FILTROS Y ACCIONES */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                    
+                    {/* Selectores de Periodo */}
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <div className="flex items-center gap-2 text-gray-700 font-medium">
+                            <Filter className="h-5 w-5 text-gray-400" />
+                            <span>Periodo:</span>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                            <select 
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5"
+                                value={filtroMes}
+                                onChange={(e) => setFiltroMes(parseInt(e.target.value))}
+                            >
+                                {MESES.map(m => (
+                                    <option key={m.id} value={m.id}>{m.nombre}</option>
+                                ))}
+                            </select>
+
+                            <input 
+                                type="number"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-24"
+                                value={filtroAnio}
+                                onChange={(e) => setFiltroAnio(parseInt(e.target.value))}
+                                min="2020"
+                                max="2030"
+                            />
+                        </div>
+                    </div>
+
+                    <button 
+                        onClick={() => {
+                            // Pre-cargamos el modal con el mes/año que el usuario está viendo
+                            setFormData({ 
+                                rol: '', seniority: '', costo: '', 
+                                mes: filtroMes, 
+                                anio: filtroAnio 
+                            });
+                            setEditingId(null);
+                            setIsModalOpen(true);
+                        }} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition w-full md:w-auto justify-center"
+                    >
+                        <Plus size={18} /> Nueva Tarifa
+                    </button>
+                </div>
+
+                {/* TABLA */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-gray-600 text-sm uppercase">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold">Rol</th>
+                                <th className="px-6 py-4 font-semibold">Seniority</th>
+                                <th className="px-6 py-4 font-semibold">Costo Mensual</th>
+                                <th className="px-6 py-4 font-semibold">Mes de Vigencia</th>
+                                <th className="px-6 py-4 font-semibold text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {loading ? (
+                                <tr><td colSpan="4" className="p-8 text-center"><Loader className="animate-spin mx-auto text-blue-500"/></td></tr>
+                            ) : (
+                                costosFiltrados.length > 0 ? (
+                                    costosFiltrados.map((c, index) => (
+                                        <tr key={index} className="hover:bg-gray-50 transition">
+                                            <td className="px-6 py-4 font-medium text-gray-800">{c.rolDisplay}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${
+                                                    c.seniorityDisplay === 'Senior' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                    c.seniorityDisplay === 'Semi-Senior' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                    'bg-gray-50 text-gray-700 border-gray-200'
+                                                }`}>
+                                                    {c.seniorityDisplay}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 font-mono text-gray-700 font-bold">USD {c.costo}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 flex items-center gap-2">
+                                                <Calendar size={14} />
+                                                {formatVigencia(c.fecha)}
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button 
+                                                    onClick={() => handleEdit(c)}
+                                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1 justify-end w-full"
+                                                >
+                                                    <Edit2 size={14} /> Editar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                                            No hay tarifas cargadas para <b>{MESES[filtroMes-1].nombre} {filtroAnio}</b>.
+                                        </td>
+                                    </tr>
+                                )
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </main>
+
+            {/* MODAL */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animate-fade-in">
+                        <h3 className="text-lg font-bold mb-4 text-gray-800">
+                            {editingId ? 'Editar Costo Mensual' : 'Registrar Costo Mensual'}
+                        </h3>
+                        <form onSubmit={handleSave} className="space-y-4">
+                             <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                                <div>
+                                    <label className="block text-xs text-gray-600 mb-1 font-bold uppercase">Mes</label>
+                                    <select 
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                                        value={formData.mes}
+                                        onChange={e => setFormData({...formData, mes: e.target.value})}
+                                    >
+                                        {MESES.map(m => (
+                                            <option key={m.id} value={m.id}>{m.nombre}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs text-gray-600 mb-1 font-bold uppercase">Año</label>
+                                    <input 
+                                        type="number" 
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                                        min="2020"
+                                        max="2030"
+                                        value={formData.anio}
+                                        onChange={e => setFormData({...formData, anio: e.target.value})}
+                                    />
+                                </div>
+                             </div>
+
+                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+                                <select 
+                                    className={`w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                                        editingId ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'border-gray-300'
+                                    }`}
+                                    required 
+                                    value={formData.rol}
+                                    onChange={e => setFormData({...formData, rol: e.target.value})}
+                                    disabled={!!editingId} // Bloqueado si estamos editando
+                                >
+                                    <option value="">Seleccionar...</option>
+                                    <option value="Desarrollador">Desarrollador</option>
+                                    <option value="Analista">Analista</option>
+                                    <option value="Project Manager">Project Manager</option>
+                                </select>
+                             </div>
+                             
+                             <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
+                                    <select 
+                                        className={`w-full border rounded-lg p-2 ${
+                                            editingId ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed' : 'border-gray-300'
+                                        }`}
+                                        value={formData.seniority}
+                                        onChange={e => setFormData({...formData, seniority: e.target.value})}
+                                        disabled={!!editingId} // Bloqueado si estamos editando
+                                    >
+                                        <option value="">Nivel...</option>
+                                        <option value="Junior">Junior</option>
+                                        <option value="Semi-Senior">Semi-Senior</option>
+                                        <option value="Senior">Senior</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Costo (USD)</label>
+                                    <input 
+                                        type="number" 
+                                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500" 
+                                        required 
+                                        placeholder="0.00"
+                                        value={formData.costo}
+                                        onChange={e => setFormData({...formData, costo: e.target.value})}
+                                    />
+                                </div>
+                             </div>
+
+                            <div className="flex justify-end gap-3 mt-6">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Cancelar</button>
+                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm">
+                                    {editingId ? 'Guardar Cambios' : 'Crear Costo'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default CostosPage;
