@@ -180,8 +180,8 @@ let APIClient = {
         return getData(url);
     },
 
-    getProjectResourcesReport: async function(projectId, month) {
-        const url = `${URL_BASE}${ENDPOINT_REPORTES}/project-resources?projectId=${projectId}&month=${month}`;
+    getProjectResourcesReport: async function(projectId, year) {
+        const url = `${URL_BASE}${ENDPOINT_REPORTES}/project-costs/${year}/${projectId}`;
         return getData(url);
     },
 
@@ -205,8 +205,7 @@ let APIClient = {
     },
 
     getResourcesByProjectAndYear: async function(projectId, year) {
-        const month = `${year}-01-01`;
-        return this.getProjectResourcesReport(projectId, month);
+        return this.getProjectResourcesReport(projectId, year);
     }
 }
 

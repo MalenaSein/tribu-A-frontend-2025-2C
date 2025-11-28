@@ -201,13 +201,15 @@
             alert('Por favor seleccione un mes');
             return;
         }
+        const [yearStr] = month.split('-');
+        const year = parseInt(yearStr, 10);
 
         document.getElementById('loading').style.display = 'block';
         document.getElementById('reportContainer').style.display = 'none';
         document.getElementById('generateBtn').disabled = true;
 
         try {
-            const reporte = await APIClient.getProjectResourcesReport(projectId, month);
+            const reporte = await APIClient.getProjectResourcesReport(projectId, year);
 
             if (!reporte || !reporte.resources || reporte.resources.length === 0) {
                 mostrarSinDatos();
@@ -227,57 +229,132 @@
     function mostrarReporte(reporte) {
         const container = document.getElementById('reportContainer');
 
+        // Recursos viene como objeto { id: { ...info } }
+        const resourceEntries = Object.entries(reporte.resources || {});
+
+        if (resourceEntries.length === 0 || !reporte.months || reporte.months.length === 0) {
+            container.innerHTML = "<p>No hay datos de costos para este proyecto y año.</p>";
+            container.style.display = 'block';
+            return;
+        }
+
+        const months = Array.from({ length: 12 }, (_, i) => i + 1);
+        const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+        // costByResourceAndMonth[resourceId][month] = costo
+        const costByResourceAndMonth = {};
+        resourceEntries.forEach(([resourceId]) => {
+            costByResourceAndMonth[resourceId] = {};
+            months.forEach(m => costByResourceAndMonth[resourceId][m] = 0);
+        });
+
+        // Rellenar con los datos del reporte
+        (reporte.months || []).forEach(mData => {
+            const month = mData.month; // 1-12
+            (mData.costs || []).forEach(c => {
+                if (costByResourceAndMonth[c.resourceId]) {
+                    costByResourceAndMonth[c.resourceId][month] += c.totalCost || 0;
+                }
+            });
+        });
+
+        // Subtotales por recurso y por mes
+        const subtotalPorRecurso = {};
+        const subtotalPorMes = {};
+        months.forEach(m => subtotalPorMes[m] = 0);
+
+        let grandTotal = 0;
+
+        resourceEntries.forEach(([resourceId]) => {
+            let totalRecurso = 0;
+            months.forEach(m => {
+                const val = costByResourceAndMonth[resourceId][m] || 0;
+                totalRecurso += val;
+                subtotalPorMes[m] += val;
+            });
+            subtotalPorRecurso[resourceId] = totalRecurso;
+            grandTotal += totalRecurso;
+        });
+
+        // Cards de resumen arriba (total proyecto, año, #recursos, meses con datos)
+        const recursosConCosto = resourceEntries.length;
+        const mesesConDatos = (reporte.months || []).length;
+
         let html = `
-                <div class="summary-cards">
-                    <div class="card">
-                        <div class="card-label">Costo Total</div>
-                        <div class="card-value">$${reporte.totalCost.toFixed(2)}</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-label">Horas Totales</div>
-                        <div class="card-value">${reporte.totalHours.toFixed(2)} hs</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-label">Recursos</div>
-                        <div class="card-value">${reporte.resources.length}</div>
-                    </div>
-                    <div class="card">
-                        <div class="card-label">Cliente</div>
-                        <div class="card-value" style="font-size: 18px;">${reporte.projectClient || 'N/A'}</div>
-                    </div>
+            <div class="summary-cards">
+                <div class="card">
+                    <div class="card-label">Costo Total Proyecto</div>
+                    <div class="card-value">$${grandTotal.toFixed(2)}</div>
                 </div>
+                <div class="card">
+                    <div class="card-label">Año</div>
+                    <div class="card-value">${reporte.year}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Recursos</div>
+                    <div class="card-value">${recursosConCosto}</div>
+                </div>
+                <div class="card">
+                    <div class="card-label">Meses con datos</div>
+                    <div class="card-value">${mesesConDatos}</div>
+                </div>
+            </div>
+        `;
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Empleado</th>
-                            <th>Rol</th>
-                            <th>Experiencia</th>
-                            <th>Horas</th>
-                            <th>Tarifa/Hora</th>
-                            <th>Costo Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-        reporte.resources.forEach(resource => {
-            html += `
+        // Tabla: filas recursos, columnas meses + subtotal recurso
+        html += `
+            <table>
+                <thead>
                     <tr>
-                        <td>${resource.employeeName}</td>
-                        <td>${resource.rolName}</td>
-                        <td>${resource.rolExperience}</td>
-                        <td>${resource.hoursWorked.toFixed(2)}</td>
-                        <td>$${resource.hourlyRate.toFixed(2)}</td>
-                        <td><strong>$${resource.totalCost.toFixed(2)}</strong></td>
-                    </tr>
-                `;
+                        <th>Recurso</th>
+        `;
+
+        months.forEach((m, idx) => {
+            html += `<th>${monthNames[idx]}</th>`;
         });
 
         html += `
-                    </tbody>
-                </table>
-            `;
+                        <th>Total Recurso</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        resourceEntries.forEach(([resourceId, info]) => {
+            const nombre =
+                info.fullName ||
+                `${info.nombre || ''} ${info.apellido || ''}`.trim() ||
+                resourceId;
+
+            html += `<tr><td>${nombre}</td>`;
+
+            months.forEach(m => {
+                const val = costByResourceAndMonth[resourceId][m] || 0;
+                html += `<td>$${val.toFixed(2)}</td>`;
+            });
+
+            html += `<td><strong>$${subtotalPorRecurso[resourceId].toFixed(2)}</strong></td></tr>`;
+        });
+
+        // Fila de subtotales por mes + total proyecto
+        html += `
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th>Total Mes</th>
+        `;
+
+        months.forEach(m => {
+            html += `<th>$${subtotalPorMes[m].toFixed(2)}</th>`;
+        });
+
+        html += `
+                        <th><strong>$${grandTotal.toFixed(2)}</strong></th>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
 
         container.innerHTML = html;
         container.style.display = 'block';
