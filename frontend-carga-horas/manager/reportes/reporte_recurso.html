@@ -231,7 +231,7 @@
         try {
             const reporte = await APIClient.getWeeklyHoursReport(employeeId, startDate, endDate);
 
-            if (!reporte || !reporte.weekSummaries || reporte.weekSummaries.length === 0) {
+            if (!reporte || !reporte.weeks || reporte.weeks.length === 0) {
                 mostrarSinDatos();
                 return;
             }
@@ -266,18 +266,18 @@
                         </div>
                         <div class="info-item">
                             <div class="info-label">Semanas</div>
-                            <div class="info-value">${reporte.weekSummaries.length}</div>
+                            <div class="info-value">${reporte.weeks.length}</div>
                         </div>
                     </div>
             `;
 
-        reporte.weekSummaries.forEach(week => {
+        reporte.weeks.forEach(week => {
             html += `
                     <div class="week-section">
                         <div class="week-header">
                             Semana ${week.weekNumber}
                             (${formatDate(week.weekStart)} - ${formatDate(week.weekEnd)})
-                            - Total: ${week.totalHours.toFixed(2)} hs
+                            - Total: ${week.weekTotalHours.toFixed(2)} hs
                         </div>
                         <table>
                             <thead>
@@ -292,10 +292,10 @@
                             <tbody>
                 `;
 
-            week.dailyEntries.forEach(entry => {
+            week.days.forEach(entry => {
                 html += `
                         <tr>
-                            <td>${formatDate(entry.workDate)}</td>
+                            <td>${formatDate(entry.date)}</td>
                             <td>${entry.projectName}</td>
                             <td>${entry.hours.toFixed(2)}</td>
                             <td>${entry.description || '-'}</td>

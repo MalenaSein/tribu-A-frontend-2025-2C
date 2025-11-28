@@ -209,7 +209,7 @@
         try {
             const reporte = await APIClient.getProjectResourcesReport(projectId, month);
 
-            if (!reporte || !reporte.resourceSummaries || reporte.resourceSummaries.length === 0) {
+            if (!reporte || !reporte.resources || reporte.resources.length === 0) {
                 mostrarSinDatos();
                 return;
             }
@@ -220,7 +220,7 @@
             alert('Error al generar el reporte. Por favor intente nuevamente.');
         } finally {
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('generateBtn').disabled = true;
+            document.getElementById('generateBtn').disabled = false;
         }
     }
 
@@ -239,11 +239,11 @@
                     </div>
                     <div class="card">
                         <div class="card-label">Recursos</div>
-                        <div class="card-value">${reporte.resourceSummaries.length}</div>
+                        <div class="card-value">${reporte.resources.length}</div>
                     </div>
                     <div class="card">
                         <div class="card-label">Cliente</div>
-                        <div class="card-value" style="font-size: 18px;">${reporte.clientName}</div>
+                        <div class="card-value" style="font-size: 18px;">${reporte.projectClient || 'N/A'}</div>
                     </div>
                 </div>
 
@@ -261,7 +261,7 @@
                     <tbody>
             `;
 
-        reporte.resourceSummaries.forEach(resource => {
+        reporte.resources.forEach(resource => {
             html += `
                     <tr>
                         <td>${resource.employeeName}</td>

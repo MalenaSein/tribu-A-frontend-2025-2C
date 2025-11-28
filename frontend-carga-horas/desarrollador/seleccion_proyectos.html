@@ -1,92 +1,201 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="utf-8" />
-    <title>Sistema de Gestión de Horas - Selección de Proyectos</title>
-    <link rel="stylesheet" href="../common/globals.css" />
-    <link rel="stylesheet" href="../common/styleguide.css" />
-    <link rel="stylesheet" href="seleccion_proyectos.css" />
-    <script src="../config.js"></script>
-    <script src="../APIClient.js"></script>
-  </head>
-  <body>
-    <main class="proyectos">
-      <header class="rectangle">
-        <h1 class="div">SISTEMA DE GESTIÓN DE HORAS</h1>
-        <div class="user-info">
-          <span class="text-wrapper-2">Desarrollador</span>
-          <div class="user" aria-label="Icono de usuario">
-            <svg class="icon-3" width="24" height="24" viewBox="0 0 24 24" fill="white">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Sistema de Gestión de Horas - Mis Proyectos</title>
+  <link rel="stylesheet" href="carga_horas.css" />
+  <script src="../config.js"></script>
+  <script src="../APIClient.js"></script>
+  <script src="../auth-service.js"></script>
+</head>
+<body>
+<main class="cargar-horas">
+  <!-- HEADER PRINCIPAL -->
+  <nav class="rectangle-2" role="navigation">
+    <h1 class="p">SISTEMA DE GESTIÓN DE HORAS</h1>
+    <div class="user-info">
+      <span class="text-wrapper-5" id="userName">Cargando...</span>
+      <div class="user" aria-label="Icono de usuario">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
+      </div>
+    </div>
+  </nav>
+
+  <!-- HEADER -->
+  <section class="project-header">
+    <div class="rectangle">
+      <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+      </svg>
+      <h2 class="text-wrapper-2">Mis Proyectos</h2>
+    </div>
+  </section>
+
+  <!-- LISTA DE PROYECTOS -->
+  <section class="hours-table-section" id="projectsContainer">
+    <div style="text-align: center; padding: 40px; color: #666;">
+      <div style="border: 4px solid #f3f3f3; border-top: 4px solid #8f0b09; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+      <p>Cargando tus proyectos...</p>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </section>
+
+  <!-- BOTONES -->
+  <div class="action-buttons">
+    <button type="button" class="button-4" onclick="window.location.href='../login.html'">
+      <span>← Cerrar Sesión</span>
+    </button>
+  </div>
+</main>
+
+<script>
+  // ========================================
+  // VARIABLES GLOBALES
+  // ========================================
+  const params = new URLSearchParams(window.location.search);
+  const resourceId = params.get('resourceId') || params.get('id');
+
+  console.log('📋 ResourceId:', resourceId);
+
+  // ========================================
+  // VALIDACIÓN
+  // ========================================
+  const user = getCurrentUser();
+
+  if (!user) {
+    console.error('❌ No hay usuario en sesión');
+    alert('No hay sesión activa. Redirigiendo a login...');
+    window.location.href = '../login.html';
+    throw new Error('No authenticated');
+  }
+
+  if (!resourceId) {
+    console.error('❌ Falta resourceId');
+    alert('Falta información del empleado. Redirigiendo a login...');
+    window.location.href = '../login.html';
+    throw new Error('Missing resourceId');
+  }
+
+  // Mostrar nombre del usuario
+  document.getElementById('userName').textContent = user.name || 'Usuario';
+
+  // ========================================
+  // CARGAR PROYECTOS
+  // ========================================
+  async function loadProjects() {
+    const container = document.getElementById('projectsContainer');
+
+    try {
+      console.log('📂 Cargando proyectos del empleado:', resourceId);
+
+      const projects = await APIClient.getProjectsByEmployeeId(resourceId);
+
+      if (!projects || projects.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #666;">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="#ccc" style="margin-bottom: 16px;">
+              <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+            </svg>
+            <p style="font-size: 18px; margin-bottom: 8px;">No tienes proyectos asignados</p>
+            <p style="font-size: 14px; color: #999;">Contacta a tu manager para que te asigne proyectos</p>
+          </div>
+        `;
+        return;
+      }
+
+      console.log('✅ Proyectos cargados:', projects.length);
+      renderProjects(projects);
+
+    } catch (error) {
+      console.error('❌ Error al cargar proyectos:', error);
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #c62828;">
+          <p style="font-size: 18px; margin-bottom: 8px;">❌ Error al cargar proyectos</p>
+          <p style="font-size: 14px; margin-bottom: 16px;">${error.message}</p>
+          <button class="button-2" onclick="loadProjects()">Reintentar</button>
+        </div>
+      `;
+    }
+  }
+
+  // ========================================
+  // RENDERIZAR PROYECTOS
+  // ========================================
+  function renderProjects(projects) {
+    const container = document.getElementById('projectsContainer');
+
+    let html = '<div style="max-width: 800px; margin: 0 auto; padding: 20px;">';
+    html += '<h2 style="margin-bottom: 24px; color: #000; font-size: 20px;">Seleccione un proyecto para cargar horas:</h2>';
+    html += '<div style="display: flex; flex-direction: column; gap: 16px;">';
+
+    projects.forEach(project => {
+      const shortId = project.id.substring(0, 8);
+      html += `
+        <div class="project-card-clickable"
+             style="background: #e7e7e7; border-radius: 12px; padding: 20px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent;"
+             onmouseover="this.style.background='#d5d5d5'; this.style.borderColor='#8f0b09';"
+             onmouseout="this.style.background='#e7e7e7'; this.style.borderColor='transparent';"
+             onclick="selectProject('${project.id}', '${escapeHtml(project.nombre)}')">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="#8f0b09">
+              <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+            </svg>
+            <div style="flex: 1;">
+              <h3 style="margin: 0 0 4px 0; color: #000; font-size: 18px; font-weight: 600;">${escapeHtml(project.nombre)}</h3>
+              <p style="margin: 0; color: #666; font-size: 13px;">Código: ${project.codigo || shortId}</p>
+            </div>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
+              <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
             </svg>
           </div>
         </div>
-      </header>
-      
-      <div class="content-wrapper">
-        <h2 class="text-wrapper-3">Seleccione su Proyecto</h2>
-        
-        <div class="project-list" >
-          <section class="frame" id="contenedor_tarjetas">
-            <p>cargando...</p>
-          </section> 
-          
-          </section>
-        </div>
-      </div>
-      
-      <div class="button-wrapper">
-        <a href="../login.html" class="button-2" type="button">
-          <span class="button-3">Volver al Inicio</span>
-        </a>
-      </div>
-    </main>
-    <script>
-      const parametros = new URLSearchParams(window.location.search);
-      const idRecurso = parametros.get('id');
+      `;
+    });
 
-      let proyectos = [];
+    html += '</div></div>';
+    container.innerHTML = html;
+  }
 
-      APIClient.getProjectsByEmployeeId(idRecurso)
-              .then(proyectos => {
+  // ========================================
+  // SELECCIONAR PROYECTO
+  // ========================================
+  function selectProject(projectId, projectName) {
+    console.log('📁 Proyecto seleccionado:', projectName);
+    // Redirigir a la página de carga de horas
+    window.location.href = `carga_horas.html?resourceId=${resourceId}&projectId=${projectId}&projectName=${encodeURIComponent(projectName)}`;
+  }
 
-                if (!Array.isArray(proyectos)) {
+  // ========================================
+  // UTILIDADES
+  // ========================================
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-                  throw new Error("Formato de datos de proyectos inválido.");
-                }
+  function getCurrentUser() {
+    try {
+      const userStr = sessionStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error('Error al obtener usuario:', error);
+      return null;
+    }
+  }
 
-                console.log(proyectos);
-                const contenedorTarjetas = document.querySelector("#contenedor_tarjetas");
-
-                if(proyectos.length === 0) {
-                  contenedorTarjetas.innerHTML = "No hay proyectos para este empleado";
-                } else {
-                  contenedorTarjetas.innerHTML = "";
-                  proyectos.forEach(proyecto => {
-                    contenedorTarjetas.innerHTML += crearTarjeta(proyecto);
-                  });
-                }
-              })
-              .catch(error => {
-                console.error("Fallo al cargar proyectos (API o red):", error);
-                document.querySelector("#contenedor_tarjetas").innerHTML =
-                        `Error al cargar proyectos. Intente nuevamente. (${error.message || 'Error de red'})`;
-              });
-
-      function crearTarjeta(proyecto) {
-        return `<article class="project-card">
-              <div class="rectangle-2">
-                <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="#8f0b09">
-                  <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-                </svg>
-                <h3 class="text-wrapper-6" id="">${proyecto.nombre}</h3>
-                <div class="frame-2" aria-hidden="true"></div>
-                <a href="carga_horas.html?projectId=${proyecto.id}&projectName=${proyecto.nombre}&resourceId=${idRecurso}" class="text-wrapper-5">Ver proyecto</a>
-              </div>
-            </article>`
-      }
-
-    </script>
-  </body>
+  // ========================================
+  // INICIALIZAR
+  // ========================================
+  loadProjects();
+</script>
+</body>
 </html>

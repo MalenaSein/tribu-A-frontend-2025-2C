@@ -5,7 +5,6 @@
   <meta charset="utf-8" />
   <title>Sistema de Gestión de Horas - Login</title>
   <script src="config.js"></script>
-  <script src="APIClient.js"></script>
   <style>
     @import url("https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css");
 
@@ -54,8 +53,15 @@
       font-size: 28px;
       font-weight: 600;
       color: #8f0b09;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
       text-align: center;
+    }
+
+    .form-subtitle {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 30px;
     }
 
     .input-field {
@@ -70,7 +76,7 @@
       margin-bottom: 8px;
     }
 
-    .input {
+    .select {
       width: 100%;
       padding: 12px 16px;
       font-size: 16px;
@@ -78,12 +84,25 @@
       border-radius: 8px;
       font-family: "Inter", Helvetica;
       transition: border-color 0.2s, box-shadow 0.2s;
+      background-color: #ffffff;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23666' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
     }
 
-    .input:focus {
+    .select:focus {
       outline: none;
       border-color: #8f0b09;
       box-shadow: 0 0 0 3px rgba(143, 11, 9, 0.1);
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
     }
 
     .button-group {
@@ -100,7 +119,7 @@
       transition: background-color 0.2s;
     }
 
-    .button:hover {
+    .button:hover:not(:disabled) {
       background-color: #770000;
     }
 
@@ -113,21 +132,6 @@
       color: #ffffff;
       font-size: 16px;
       font-weight: 500;
-    }
-
-    .text-link {
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .text-link a {
-      color: #8f0b09;
-      text-decoration: none;
-      font-size: 14px;
-    }
-
-    .text-link a:hover {
-      text-decoration: underline;
     }
 
     .error-message {
@@ -150,6 +154,30 @@
       color: #8f0b09;
       margin-top: 10px;
     }
+
+    .loading.show {
+      display: block;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #8f0b09;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .select:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -158,151 +186,225 @@
 
   <section class="form-log-in" aria-labelledby="login-heading">
     <h2 id="login-heading" class="form-title">Iniciar Sesión</h2>
+    <p class="form-subtitle">Seleccione su usuario para continuar</p>
 
     <div id="errorMessage" class="error-message" role="alert"></div>
 
     <form id="loginForm" novalidate>
       <div class="input-field">
-        <label for="employee-code" class="label">Código de Empleado</label>
-        <input
-                type="text"
-                id="employee-code"
-                name="employee-code"
-                class="input"
-                placeholder="Ingrese su código"
-                required
-                aria-required="true"
-                autocomplete="username"
-        />
-      </div>
-
-      <div class="input-field">
-        <label for="password" class="label">Contraseña</label>
-        <input
-                type="password"
-                id="password"
-                name="password"
-                class="input"
-                placeholder="Ingrese su contraseña"
-                required
-                aria-required="true"
-                autocomplete="current-password"
-        />
+        <label for="employee-code" class="label">Seleccione su Usuario</label>
+        <select id="employee-code" name="employee-code" class="select" required disabled>
+          <option value="">Cargando empleados...</option>
+        </select>
+        <div class="helper-text" id="helperText">Seleccione su código de empleado</div>
       </div>
 
       <div class="button-group">
-        <button type="submit" class="button" id="loginButton">
-          <span class="button-text">Iniciar sesión</span>
+        <button type="submit" class="button" id="loginButton" disabled>
+          <span class="button-text">Entrar</span>
         </button>
       </div>
 
-      <div class="loading" id="loadingIndicator">Validando credenciales...</div>
+      <div class="loading" id="loadingIndicator">
+        <div class="spinner"></div>
+        <span>Cargando...</span>
+      </div>
     </form>
-
-    <div class="text-link">
-      <a href="#forgot-password">¿Olvidaste tu contraseña?</a>
-    </div>
   </section>
 </main>
 
 <script>
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8080';
+
+  // IDs de roles hardcodeados (los mismos del application.properties)
+  const MANAGER_ROLE_ID = '1f14a491-e26d-4092-86ea-d76f20c165d1';
+  const DEVELOPER_ROLE_ID = '6e6ecd47-fa18-490e-b25a-c9101a398b6d';
 
   // Referencias DOM
   const loginForm = document.getElementById('loginForm');
   const loginButton = document.getElementById('loginButton');
   const loadingIndicator = document.getElementById('loadingIndicator');
   const errorMessage = document.getElementById('errorMessage');
-  const employeeCodeInput = document.getElementById('employee-code');
-  const passwordInput = document.getElementById('password');
+  const employeeSelect = document.getElementById('employee-code');
+  const helperText = document.getElementById('helperText');
+
+  let employees = [];
+
+  // ========================================
+  // MAPEAR ROL ID A NOMBRE
+  // ========================================
+  function mapRolIdToRole(rolId) {
+    if (!rolId) return 'DEVELOPER';
+
+    if (rolId === MANAGER_ROLE_ID) {
+      return 'MANAGER';
+    } else if (rolId === DEVELOPER_ROLE_ID) {
+      return 'DEVELOPER';
+    } else {
+      // Por defecto, developer
+      console.warn('⚠️ Rol desconocido:', rolId, '- Asignando DEVELOPER');
+      return 'DEVELOPER';
+    }
+  }
+
+  // ========================================
+  // REDIRIGIR POR ROL
+  // ========================================
+  // ========================================
+  // REDIRIGIR POR ROL (CORREGIDO)
+  // ========================================
+  function redirectByRole(role, employeeCode) {
+    console.log('🔀 Redirigiendo por rol:', role);
+
+    if (role === 'MANAGER') {
+      console.log('➡️ Redirigiendo a MANAGER');
+      window.location.href = './manager/home.html';
+    }
+    else {
+      console.log('➡️ Redirigiendo a DEVELOPER');
+      // ✅ CAMBIO: Usar 'resourceId' en lugar de 'id'
+      window.location.href = `./desarrollador/seleccion_proyectos.html?resourceId=${employeeCode}`;
+    }
+  }
+  // ========================================
+  // CARGAR EMPLEADOS DESDE API
+  // ========================================
+  async function loadEmployees() {
+    try {
+      console.log('📄 Cargando empleados desde:', `${API_BASE_URL}/api/resources`);
+
+      const response = await fetch(`${API_BASE_URL}/api/resources`);
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+
+      employees = await response.json();
+      console.log('✅ Empleados cargados:', employees.length);
+
+      employeeSelect.innerHTML = '';
+
+      if (employees.length === 0) {
+        employeeSelect.innerHTML = '<option value="">No hay empleados disponibles</option>';
+        helperText.textContent = '⚠️ No se encontraron empleados';
+        return;
+      }
+
+      // Opción por defecto
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = 'Seleccione su usuario';
+      employeeSelect.appendChild(defaultOption);
+
+      // Agregar cada empleado
+      employees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify({
+          id: emp.id,
+          nombre: emp.nombre,
+          apellido: emp.apellido,
+          rolId: emp.rolId
+        });
+
+        const shortId = emp.id.substring(0, 8);
+        const role = mapRolIdToRole(emp.rolId);
+        option.textContent = `${shortId}... - ${emp.nombre} ${emp.apellido} (${role})`;
+
+        employeeSelect.appendChild(option);
+      });
+
+      employeeSelect.disabled = false;
+      loginButton.disabled = false;
+      helperText.textContent = `${employees.length} empleados disponibles`;
+
+    } catch (error) {
+      console.error('❌ Error al cargar empleados:', error);
+      employeeSelect.innerHTML = '<option value="">Error al cargar</option>';
+      showError('No se pudo cargar empleados. Verifique el backend.');
+    }
+  }
 
   function showError(message) {
     errorMessage.textContent = message;
     errorMessage.classList.add('show');
-    setTimeout(() => {
-      errorMessage.classList.remove('show');
-    }, 5000);
+    setTimeout(() => errorMessage.classList.remove('show'), 7000);
   }
 
   function saveUserSession(userData) {
-    // Guardar en sessionStorage (se borra al cerrar el navegador)
     sessionStorage.setItem('user', JSON.stringify(userData));
     sessionStorage.setItem('isAuthenticated', 'true');
+    console.log('✅ Sesión guardada:', userData);
   }
 
-  function redirectByRole(role, userId) {
-    if (role === 'MANAGER') {
-      window.location.href = './manager/home.html';
-    } else if (role === 'DEVELOPER' || role === 'DESARROLLADOR') {
-      window.location.href = `./desarrollador/seleccion_proyectos.html?id=${userId}`;
-    } else {
-      showError('Rol de usuario no reconocido');
-    }
-  }
-
-  loginForm.addEventListener('submit', async (e) => {
+  // ========================================
+  // HANDLER DEL FORMULARIO (HARDCODED)
+  // ========================================
+  loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const employeeCode = employeeCodeInput.value.trim();
-    const password = passwordInput.value;
+    const selectedValue = employeeSelect.value;
 
-    if (!employeeCode || !password) {
-      showError('Por favor complete todos los campos');
+    if (!selectedValue) {
+      showError('Por favor seleccione un empleado');
       return;
     }
 
     loginButton.disabled = true;
-    loadingIndicator.style.display = 'block';
-    errorMessage.classList.remove('show');
+    loadingIndicator.classList.add('show');
 
     try {
+      // Parsear datos del empleado seleccionado
+      const employee = JSON.parse(selectedValue);
 
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          employeeCode: employeeCode,
-          password: password
-        })
-      });
+      console.log('👤 Empleado seleccionado:', employee);
 
-      const data = await response.json();
+      // Mapear rol
+      const role = mapRolIdToRole(employee.rolId);
 
-      if (response.ok) {
-        const userData = {
-          id: data.userId,
-          employeeCode: data.employeeCode,
-          name: data.name,
-          role: data.role,
-          token: data.token
-        };
+      console.log('✅ Rol mapeado:', role);
 
-        saveUserSession(userData);
-        redirectByRole(data.role, data.userId);
-      } else {
+      // Crear datos de usuario
+      const userData = {
+        id: employee.id,
+        employeeCode: employee.id,
+        name: `${employee.nombre} ${employee.apellido}`,
+        role: role,
+        token: `hardcoded-token-${employee.id}`,
+        rolId: employee.rolId
+      };
 
-        showError(data.message || 'Credenciales inválidas');
-      }
+      // Guardar sesión
+      saveUserSession(userData);
+
+      // Redirigir por rol
+      setTimeout(() => {
+        redirectByRole(role, employee.id);
+      }, 300);
+
     } catch (error) {
-      console.error('Error al intentar iniciar sesión:', error);
-      showError('Error de conexión. Por favor intente nuevamente.');
-    } finally {
-
+      console.error('💥 Error al procesar login:', error);
+      showError('Error al procesar el login');
       loginButton.disabled = false;
-      loadingIndicator.style.display = 'none';
+      loadingIndicator.classList.remove('show');
     }
   });
 
+  // ========================================
+  // VERIFICAR SI YA ESTÁ AUTENTICADO
+  // ========================================
   window.addEventListener('DOMContentLoaded', () => {
-    const isAuthenticated = sessionStorage.getItem('isAuthenticated');
-    if (isAuthenticated === 'true') {
+    const isAuth = sessionStorage.getItem('isAuthenticated');
+
+    if (isAuth === 'true') {
       const user = JSON.parse(sessionStorage.getItem('user'));
-      if (user) {
-        redirectByRole(user.role, user.id);
+      if (user?.employeeCode && user?.role) {
+        console.log('👤 Ya autenticado, redirigiendo...');
+        redirectByRole(user.role, user.employeeCode);
+        return;
       }
     }
+
+    loadEmployees();
   });
 
 </script>

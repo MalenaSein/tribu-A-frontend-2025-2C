@@ -1,435 +1,484 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta charset="utf-8" />
-    <title>Sistema de Gestión de Horas - Cargar Horas</title>
-    <link rel="stylesheet" href="/src/common/globals.css" />
-    <link rel="stylesheet" href="/src/common/styleguide.css" />
-    <link rel="stylesheet" href="carga_horas.css" />
-    <script src="../auth-service.js"></script>
-    <script src="../route-guard.js"></script>
-    <script src="../config.js"></script>
-    <script src="../APIClient.js"></script>
-  </head>
-  <body>
-    <main class="cargar-horas">
-      <!-- HEADER PRINCIPAL -->
-      <nav class="rectangle-2" role="navigation">
-        <h1 class="p">SISTEMA DE GESTIÓN DE HORAS</h1>
-        <div class="user-info">
-          <span class="text-wrapper-5">Desarrollador</span>
-          <div class="user" aria-label="Icono de usuario">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-          </div>
-        </div>
-      </nav>
-      
-      <!-- HEADER DEL PROYECTO -->
-      <section class="project-header">
-        <div class="rectangle">
-          <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-          </svg>
-          <h2 class="text-wrapper-2">Proyecto: <span id="titulo_proyecto">Nombre del Proyecto</span></h2>
-          <div class="select-field">
-            <label for="week-select" style="position: absolute; width: 1px; height: 1px; overflow: hidden;">Seleccione su semana</label>
-            <select id="week-select" class="select" name="week">
-              <option value="">Seleccione su semana</option>
-              <option value="week1">Semana 1</option>
-              <option value="week2">Semana 2</option>
-              <option value="week3">Semana 3</option>
-            </select>
-          </div>
-        </div>
-      </section>
-      
-      <!-- TABLA DE HORAS -->
-      <section class="hours-table-section" id="tabla_de_horas">
-        <form class="table-basic" aria-label="Tabla de carga de horas">
-          <div class="table" role="grid" aria-label="Horas por tarea y día" id="tasksTable">
-            <!-- HEADER DE LA TABLA -->
-            <div class="row" role="row">
-              <div class="cell-header" role="columnheader">
-                <div class="content">
-                  <span class="text-2">TAREA</span>
-                </div>
-              </div>
-              <div class="content-wrapper" role="columnheader">
-                <div class="content">
-                  <span class="text-3">LUN</span>
-                </div>
-              </div>
-              <div class="content-wrapper" role="columnheader">
-                <div class="content">
-                  <span class="text-2">MAR</span>
-                </div>
-              </div>
-              <div class="content-wrapper" role="columnheader">
-                <div class="content">
-                  <span class="text-2">MIÉ</span>
-                </div>
-              </div>
-              <div class="content-wrapper" role="columnheader">
-                <div class="content">
-                  <span class="text-2">JUE</span>
-                </div>
-              </div>
-              <div class="content-wrapper" role="columnheader">
-                <div class="content">
-                  <span class="text-2">VIE</span>
-                </div>
-              </div>
-              <div class="content-wrapper" role="columnheader">
-                <div class="content">
-                  <span class="text-2">TOTAL</span>
-                </div>
-              </div>
-            </div>
-            
-            <!-- TAREAS DINÁMICAS -->
-            <div id="taskRows"></div>
-            
-            <!-- FILA DE TOTALES -->
-            <div class="row-3" role="row">
-              <div class="cell-default" role="rowheader">
-                <span class="text-4">TOTAL POR DÍA</span>
-              </div>
-              <div class="cell-default-2" role="gridcell">
-                <output class="text-4 total-output" id="total-mon">0.0</output>
-              </div>
-              <div class="cell-default-2" role="gridcell">
-                <output class="text-4 total-output" id="total-tue">0.0</output>
-              </div>
-              <div class="cell-default-2" role="gridcell">
-                <output class="text-4 total-output" id="total-wed">0.0</output>
-              </div>
-              <div class="cell-default-2" role="gridcell">
-                <output class="text-4 total-output" id="total-thu">0.0</output>
-              </div>
-              <div class="cell-default-2" role="gridcell">
-                <output class="text-4 total-output" id="total-fri">0.0</output>
-              </div>
-              <div class="cell-default-2" role="gridcell">
-                <output class="text-4 total-output" id="grand-total">0.0</output>
-              </div>
-            </div>
-          </div>
-        </form>
-      </section>
-      
-      <!-- FOOTER DEL PROYECTO -->
-      <!-- <footer class="project-footer">
-        <div class="div">
-          <svg class="folder-2" width="24" height="24" viewBox="0 0 24 24" fill="white">
-            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
-          </svg>
-          <p class="subtotal-proyecto">
-            <span class="span">Subtotal Proyecto: </span>
-            <output class="text-wrapper-4" id="subtotal-output">0h</output>
-          </p>
-          <p class="text-wrapper-3">
-            <span>Total semanal: </span>
-            <output id="weekly-total-output">0h</output>
-            <span> / 40h asignadas</span>
-          </p>
-        </div>
-      </footer> -->
-      
-      <!-- BOTONES DE ACCIÓN -->
-      <div class="action-buttons">
-        <!-- <button type="button" class="button-5" id="addTaskBtn">
-          <span>+ Agregar Tarea</span>
-        </button> -->
-        <button type="button" class="button-4">
-          <span>Cancelar</span>
-        </button>
-        <!-- <button type="submit" class="button-2">
-          <span>Guardar Cambios</span>
-        </button> -->
-      </div>
-    </main>
-
-    <!-- MODAL PARA AGREGAR TAREA -->
-    <div class="modal-overlay" id="modalOverlay">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>Agregar Nueva Tarea</h2>
-        </div>
-        
-        <form id="taskForm">
-          <div class="modal-body">
-            <div class="modal-form-group">
-              <label for="taskName">Nombre de la Tarea *</label>
-              <input 
-                type="text" 
-                id="taskName" 
-                name="taskName" 
-                placeholder="Ingresá el nombre de la tarea"
-                required
-                autofocus
-              />
-            </div>
-          </div>
-          
-          <div class="modal-footer">
-            <button type="button" class="modal-btn modal-btn-cancel" id="cancelModalBtn">
-              Cancelar
-            </button>
-            <button type="submit" class="modal-btn modal-btn-create">
-              Crear Tarea
-            </button>
-          </div>
-        </form>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" />
+  <title>Sistema de Gestión de Horas - Cargar Horas</title>
+  <link rel="stylesheet" href="carga_horas.css" />
+  <script src="../config.js"></script>
+  <script src="../auth-service.js"></script>
+  <script src="../route-guard.js"></script>
+  <script src="../APIClient.js"></script>
+</head>
+<body>
+<main class="cargar-horas">
+  <!-- HEADER PRINCIPAL -->
+  <nav class="rectangle-2" role="navigation">
+    <h1 class="p">SISTEMA DE GESTIÓN DE HORAS</h1>
+    <div class="user-info">
+      <span class="text-wrapper-5" id="userName">Cargando...</span>
+      <div class="user" aria-label="Icono de usuario">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+          <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+        </svg>
       </div>
     </div>
+  </nav>
 
-    <script src="index.js"></script>
-    <script>
-      // Estado de la aplicación
-      let tasks = [
-        { id: 1, name: 'TAREA 1', hours: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 } },
-        { id: 2, name: 'TAREA 2', hours: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 } },
-        { id: 3, name: 'TAREA 3', hours: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 } }
-      ];
-      let taskIdCounter = 4;
+  <!-- HEADER DEL PROYECTO -->
+  <section class="project-header">
+    <div class="rectangle">
+      <svg class="folder" width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+      </svg>
+      <h2 class="text-wrapper-2">Proyecto: <span id="titulo_proyecto">Cargando...</span></h2>
+      <div class="select-field">
+        <label for="week-select" style="position: absolute; width: 1px; height: 1px; overflow: hidden;">Seleccione la semana</label>
+        <input type="week" id="week-select" class="select" name="week" />
+      </div>
+    </div>
+  </section>
 
-      // Referencias al DOM
-      const modal = document.getElementById('modalOverlay');
-      const addTaskBtn = document.getElementById('addTaskBtn');
-      const cancelModalBtn = document.getElementById('cancelModalBtn');
-      const taskForm = document.getElementById('taskForm');
-      const taskNameInput = document.getElementById('taskName');
-      const taskRowsContainer = document.getElementById('taskRows');
+  <!-- TABLA DE HORAS -->
+  <section class="hours-table-section">
+    <div id="tabla_de_horas">
+      <div style="text-align: center; padding: 40px; color: #666;">
+        <div style="border: 4px solid #f3f3f3; border-top: 4px solid #8f0b09; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+        <p>Cargando tareas del proyecto...</p>
+      </div>
+      <style>
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      </style>
+    </div>
+  </section>
 
-      // Función para renderizar todas las tareas
-      function renderTasks() {
-        taskRowsContainer.innerHTML = '';
-        
-        tasks.forEach(task => {
-          const taskRow = createTaskRow(task);
-          taskRowsContainer.appendChild(taskRow);
-        });
-        
-        updateTotals();
-      }
+  <!-- BOTONES DE ACCIÓN -->
+  <div class="action-buttons">
+    <button type="button" class="button-4" id="cancelBtn">
+      <span>← Volver a Proyectos</span>
+    </button>
+    <button type="button" class="button-2" id="saveBtn" style="display: none;">
+      <span>💾 Guardar Horas</span>
+    </button>
+  </div>
+</main>
 
-      // Función para crear una fila de tarea
-      function createTaskRow(task) {
-        const row = document.createElement('div');
-        row.className = 'row-2';
-        row.setAttribute('role', 'row');
-        row.setAttribute('data-task-id', task.id);
-        
-        row.innerHTML = `
-          <div class="cell-default" role="rowheader">
-            <span class="text-4">${task.name}</span>
-            <button type="button" class="delete-task-btn" data-task-id="${task.id}" aria-label="Eliminar tarea ${task.name}" title="Eliminar tarea">×</button>
-          </div>
-          <div class="cell-default-2" role="gridcell">
-            <input type="number" class="hour-input" data-task="${task.id}" data-day="mon" 
-              min="0" max="24" step="0.5" value="${task.hours.mon || 0}" />
-          </div>
-          <div class="cell-default-2" role="gridcell">
-            <input type="number" class="hour-input" data-task="${task.id}" data-day="tue" 
-              min="0" max="24" step="0.5" value="${task.hours.tue || 0}" />
-          </div>
-          <div class="cell-default-2" role="gridcell">
-            <input type="number" class="hour-input" data-task="${task.id}" data-day="wed" 
-              min="0" max="24" step="0.5" value="${task.hours.wed || 0}" />
-          </div>
-          <div class="cell-default-2" role="gridcell">
-            <input type="number" class="hour-input" data-task="${task.id}" data-day="thu" 
-              min="0" max="24" step="0.5" value="${task.hours.thu || 0}" />
-          </div>
-          <div class="cell-default-2" role="gridcell">
-            <input type="number" class="hour-input" data-task="${task.id}" data-day="fri" 
-              min="0" max="24" step="0.5" value="${task.hours.fri || 0}" />
-          </div>
-          <div class="cell-default-2" role="gridcell">
-            <output class="total-output" id="total-task-${task.id}">0.0</output>
+<script>
+  // ========================================
+  // VARIABLES GLOBALES
+  // ========================================
+  const params = new URLSearchParams(window.location.search);
+  const projectId = params.get('projectId');
+  const resourceId = params.get('resourceId');
+  const projectName = params.get('projectName');
+
+  let tasks = [];
+  let hoursData = {};
+
+  // ========================================
+  // VALIDACIÓN INICIAL
+  // ========================================
+  console.log('📋 Parámetros:', { projectId, resourceId, projectName });
+
+  const user = getCurrentUser();
+
+  if (!user || !resourceId || !projectId) {
+    console.error('❌ Faltan datos necesarios');
+    alert('Faltan datos necesarios para cargar las horas');
+    window.location.href = 'seleccion_proyectos.html?resourceId=' + (resourceId || '');
+    throw new Error('Missing required parameters');
+  }
+
+  document.getElementById('userName').textContent = user.name || 'Usuario';
+  document.getElementById('titulo_proyecto').textContent = projectName || 'Proyecto';
+
+  // Configurar semana actual - CORREGIDO ✅
+  const weekInput = document.getElementById('week-select');
+  weekInput.value = getCurrentWeekString();
+
+  // ========================================
+  // CARGAR TAREAS DESDE EL BACKEND
+  // ========================================
+  async function loadTasks() {
+    const container = document.getElementById('tabla_de_horas');
+
+    if (!container) {
+      console.error("❌ El contenedor 'tabla_de_horas' no existe.");
+      return;
+    }
+
+    try {
+      console.log('📋 Cargando tareas del proyecto:', projectId);
+
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #666;">
+          <div style="border: 4px solid #f3f3f3; border-top: 4px solid #8f0b09; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+          <p>Cargando tareas del proyecto...</p>
+        </div>
+      `;
+
+      const response = await APIClient.getTasksByProject(projectId);
+
+      if (!response || response.length === 0) {
+        console.warn('⚠️ No se encontraron tareas');
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #666;">
+            <p style="font-size: 18px;">No hay tareas en este proyecto</p>
           </div>
         `;
-        
-        return row;
+        return;
       }
 
-      // Función para actualizar totales
-      function updateTotals() {
-        const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
-        let weekTotal = 0;
-        
-        // Calcular totales por tarea
-        tasks.forEach(task => {
-          let taskTotal = 0;
-          days.forEach(day => {
-            const value = parseFloat(task.hours[day]) || 0;
-            taskTotal += value;
-          });
-          
-          const taskTotalElement = document.getElementById(`total-task-${task.id}`);
-          if (taskTotalElement) {
-            taskTotalElement.textContent = taskTotal.toFixed(1);
-          }
-          
-          weekTotal += taskTotal;
-        });
-        
-        // Calcular totales por día
+      tasks = response.filter(task => task.proyectoId === projectId);
+      console.log('✅ Tareas filtradas:', tasks.length);
+
+      if (tasks.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #666;">
+            <p style="font-size: 18px;">No hay tareas asignadas</p>
+          </div>
+        `;
+        return;
+      }
+
+      tasks.forEach(task => {
+        hoursData[task.id] = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+      });
+
+      renderTable();
+      document.getElementById('saveBtn').style.display = 'inline-flex';
+
+    } catch (error) {
+      console.error('❌ Error al cargar tareas:', error);
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #c62828;">
+          <p>❌ Error al cargar tareas</p>
+          <button class="button-2" onclick="loadTasks()">Reintentar</button>
+        </div>
+      `;
+    }
+  }
+
+  // ========================================
+  // RENDERIZAR TABLA
+  // ========================================
+  function renderTable() {
+    const container = document.getElementById('tabla_de_horas');
+
+    const html = `
+      <div class="table-basic">
+        <div class="table" role="grid">
+          <div class="row" role="row">
+            <div class="cell-header" role="columnheader">
+              <div class="content"><span class="text-2">TAREA</span></div>
+            </div>
+            <div class="content-wrapper" role="columnheader">
+              <div class="content"><span class="text-3">LUN</span></div>
+            </div>
+            <div class="content-wrapper" role="columnheader">
+              <div class="content"><span class="text-2">MAR</span></div>
+            </div>
+            <div class="content-wrapper" role="columnheader">
+              <div class="content"><span class="text-2">MIÉ</span></div>
+            </div>
+            <div class="content-wrapper" role="columnheader">
+              <div class="content"><span class="text-2">JUE</span></div>
+            </div>
+            <div class="content-wrapper" role="columnheader">
+              <div class="content"><span class="text-2">VIE</span></div>
+            </div>
+            <div class="content-wrapper" role="columnheader">
+              <div class="content"><span class="text-2">TOTAL</span></div>
+            </div>
+          </div>
+
+          ${tasks.map(task => createTaskRow(task)).join('')}
+
+          <div class="row-3" role="row">
+            <div class="cell-default" role="rowheader">
+              <span class="text-4">TOTAL POR DÍA</span>
+            </div>
+            <div class="cell-default-2" role="gridcell">
+              <output class="text-4 total-output" id="total-mon">0.0</output>
+            </div>
+            <div class="cell-default-2" role="gridcell">
+              <output class="text-4 total-output" id="total-tue">0.0</output>
+            </div>
+            <div class="cell-default-2" role="gridcell">
+              <output class="text-4 total-output" id="total-wed">0.0</output>
+            </div>
+            <div class="cell-default-2" role="gridcell">
+              <output class="text-4 total-output" id="total-thu">0.0</output>
+            </div>
+            <div class="cell-default-2" role="gridcell">
+              <output class="text-4 total-output" id="total-fri">0.0</output>
+            </div>
+            <div class="cell-default-2" role="gridcell">
+              <output class="text-4 total-output" id="grand-total">0.0</output>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    document.querySelectorAll('.hour-input').forEach(input => {
+      input.addEventListener('input', handleHourInput);
+    });
+  }
+
+  function createTaskRow(task) {
+    return `
+      <div class="row-2" role="row" data-task-id="${task.id}">
+        <div class="cell-default" role="rowheader">
+          <span class="text-4">${escapeHtml(task.nombre)}</span>
+        </div>
+        ${['mon', 'tue', 'wed', 'thu', 'fri'].map(day => `
+          <div class="cell-default-2" role="gridcell">
+            <input
+              type="number"
+              class="hour-input"
+              data-task-id="${task.id}"
+              data-day="${day}"
+              min="0"
+              max="24"
+              step="0.5"
+              value="0"
+              placeholder="0"
+            />
+          </div>
+        `).join('')}
+        <div class="cell-default-2" role="gridcell">
+          <output class="total-output" id="total-task-${task.id}">0.0</output>
+        </div>
+      </div>
+    `;
+  }
+
+  function handleHourInput(e) {
+    const input = e.target;
+    const taskId = input.dataset.taskId;
+    const day = input.dataset.day;
+    let hours = parseFloat(input.value) || 0;
+
+    if (hours < 0) hours = 0;
+    if (hours > 24) hours = 24;
+
+    input.value = hours;
+
+    if (!hoursData[taskId]) {
+      hoursData[taskId] = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+    }
+    hoursData[taskId][day] = hours;
+
+    updateTotals();
+  }
+
+  function updateTotals() {
+    const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+    let grandTotal = 0;
+
+    tasks.forEach(task => {
+      let taskTotal = 0;
+      days.forEach(day => {
+        const value = hoursData[task.id]?.[day] || 0;
+        taskTotal += value;
+      });
+
+      const taskTotalEl = document.getElementById(`total-task-${task.id}`);
+      if (taskTotalEl) taskTotalEl.textContent = taskTotal.toFixed(1);
+
+      grandTotal += taskTotal;
+    });
+
+    days.forEach(day => {
+      let dayTotal = 0;
+      tasks.forEach(task => {
+        dayTotal += hoursData[task.id]?.[day] || 0;
+      });
+
+      const dayTotalEl = document.getElementById(`total-${day}`);
+      if (dayTotalEl) dayTotalEl.textContent = dayTotal.toFixed(1);
+    });
+
+    const grandTotalEl = document.getElementById('grand-total');
+    if (grandTotalEl) grandTotalEl.textContent = grandTotal.toFixed(1);
+  }
+
+  // ========================================
+  // GUARDAR HORAS - CORREGIDO ✅
+  // ========================================
+  async function saveHours() {
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<span>⏳ Guardando...</span>';
+
+    try {
+      const weekInput = document.getElementById('week-select');
+      const monday = getMondayFromWeekInput(weekInput.value); // ✅ FUNCIÓN CORREGIDA
+
+      const entriesToSave = [];
+      const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+      const dayOffsets = { mon: 0, tue: 1, wed: 2, thu: 3, fri: 4 };
+
+      tasks.forEach(task => {
         days.forEach(day => {
-          let dayTotal = 0;
-          tasks.forEach(task => {
-            dayTotal += parseFloat(task.hours[day]) || 0;
-          });
-          
-          const dayTotalElement = document.getElementById(`total-${day}`);
-          if (dayTotalElement) {
-            dayTotalElement.textContent = dayTotal.toFixed(1);
+          const hours = hoursData[task.id]?.[day] || 0;
+
+          if (hours > 0) {
+            const workDate = new Date(monday);
+            workDate.setDate(workDate.getDate() + dayOffsets[day]);
+
+            entriesToSave.push({
+              employeeId: resourceId,
+              projectId: projectId,
+              taskId: task.id,
+              workDate: workDate.toISOString().split('T')[0],
+              workedMinutes: Math.round(hours * 60),
+              description: `${task.nombre} - ${formatDate(workDate)}`
+            });
           }
         });
-        
-        // Total general
-        const grandTotalElement = document.getElementById('grand-total');
-        if (grandTotalElement) {
-          grandTotalElement.textContent = weekTotal.toFixed(1);
-        }
-        
-        // Actualizar footer
-        document.getElementById('subtotal-output').textContent = weekTotal.toFixed(1) + 'h';
-        document.getElementById('weekly-total-output').textContent = weekTotal.toFixed(1) + 'h';
+      });
+
+      if (entriesToSave.length === 0) {
+        alert('⚠️ No hay horas para guardar');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<span>💾 Guardar Horas</span>';
+        return;
       }
 
-      // Función para eliminar tarea
-      function deleteTask(taskId) {
-        if (tasks.length <= 1) {
-          alert('Debe mantener al menos una tarea en el proyecto.');
-          return;
-        }
-        
-        if (confirm('¿Está seguro de que desea eliminar esta tarea?')) {
-          tasks = tasks.filter(t => t.id !== taskId);
-          renderTasks();
+      console.log('💾 Guardando', entriesToSave.length, 'entradas');
+
+      for (const entry of entriesToSave) {
+        try {
+          await APIClient.createTimeEntry(entry);
+          console.log('✅ Entrada guardada:', entry);
+        } catch (error) {
+          console.error('❌ Error:', entry, error);
+          throw error;
         }
       }
 
-      // Event listener para cambios en inputs de horas
-      document.addEventListener('input', (e) => {
-        if (e.target.classList.contains('hour-input')) {
-          const taskId = parseInt(e.target.dataset.task);
-          const day = e.target.dataset.day;
-          const value = parseFloat(e.target.value) || 0;
-          
-          const task = tasks.find(t => t.id === taskId);
-          if (task) {
-            task.hours[day] = value;
-            updateTotals();
-          }
-        }
-      });
+      alert(`✅ Se guardaron ${entriesToSave.length} registros exitosamente!`);
+      resetTable();
 
-      // Event listener para eliminar tareas
-      document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('delete-task-btn')) {
-          const taskId = parseInt(e.target.dataset.taskId);
-          deleteTask(taskId);
-        }
-      });
+    } catch (error) {
+      console.error('❌ Error al guardar:', error);
+      alert('❌ Error: ' + error.message);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<span>💾 Guardar Horas</span>';
+    }
+  }
 
-      // Abrir modal
-      addTaskBtn.addEventListener('click', () => {
-        modal.classList.add('active');
-        setTimeout(() => taskNameInput.focus(), 100);
-      });
-      
-      // Cerrar modal
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          closeModal();
-        }
-      });
-      
-      cancelModalBtn.addEventListener('click', closeModal);
-      
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modal.classList.contains('active')) {
-          closeModal();
-        }
-      });
-      
-      function closeModal() {
-        modal.classList.remove('active');
-        taskForm.reset();
-      }
-      
-      // Crear tarea
-      taskForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const taskName = taskNameInput.value.trim();
-        
-        if (taskName) {
-          const newTask = {
-            id: taskIdCounter++,
-            name: taskName.toUpperCase(),
-            hours: { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 }
-          };
-          
-          tasks.push(newTask);
-          renderTasks();
-          closeModal();
-        }
-      });
+  function resetTable() {
+    tasks.forEach(task => {
+      hoursData[task.id] = { mon: 0, tue: 0, wed: 0, thu: 0, fri: 0 };
+    });
 
-      // Renderizar tareas iniciales
-      renderTasks();
-    </script>
+    document.querySelectorAll('.hour-input').forEach(input => {
+      input.value = 0;
+    });
 
-    <script src="../APIClient.js"></script>
-    <script>
+    updateTotals();
+  }
 
-    
-    const parametros = new URLSearchParams(window.location.search);
-    const idProyecto = parametros.get('projectId');
-    const idRecurso = parametros.get('resourceId');
-    const nombreProyecto = parametros.get('projectName');
-    const tituloProyecto = document.querySelector("#titulo_proyecto");
-    tituloProyecto.innerHTML = nombreProyecto;
-    // ocultar la tabla de horas hasta que definamos si la hacemos asi
-    const tablaDeHoras = document.querySelector("#tabla_de_horas");
-    tablaDeHoras.style.innerHTML = '';
-      // console.log(idProyecto);
-      // console.log(idRecurso);
-      APIClient.getTasksByProjectAndResource(idProyecto, idRecurso).then(tareas => {
-        tablaDeHoras.innerHTML = `<h2> lista de tareas del proyecto <bold>${nombreProyecto}</bold> asignadas a ti</h2>`;
-        tablaDeHoras.innerHTML += '<ul>';
-        tareas.forEach( tarea => {
-        tablaDeHoras.innerHTML += `<li>
-          nombre: ${tarea.nombre}
-          <form id=${tarea.id} method='get' action='crear_entrada.html'>
+  // ========================================
+  // EVENT LISTENERS
+  // ========================================
+  document.getElementById('saveBtn').addEventListener('click', saveHours);
 
-            cantidad horas: 
-            <input type='number' min='0.5' max='40' step='0.5' name='horas' />
-            <input name='fecha' value='2023-01-01' hidden>
-            <input name='codigoEmpleado' value='${idRecurso}' hidden>
-            <input name='fechaHoraCarga' value='2023-01-01' hidden>
-            <input name='proyecto' value='${idProyecto}' hidden>
-            <input name='tarea' value='${tarea.id}' hidden>
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    if (confirm('¿Volver a proyectos? Se perderán los cambios.')) {
+      window.location.href = `seleccion_proyectos.html?resourceId=${resourceId}`;
+    }
+  });
 
-            <button class='button-2' type='submit' data-item-id=${tarea.id}>agregar horas</button>
-          </form>
-          <form action='modificar_entrada_horas.html?id=${tarea.id}'>
-            <button class='button-2' type='submit'>modificar horas</button>
-          </form>
-          <hr>
-          </li>`;
+  weekInput.addEventListener('change', (e) => {
+    console.log('📅 Semana seleccionada:', e.target.value);
+  });
 
-        });
-        tablaDeHoras.innerHTML += '</ul>';
+  // ========================================
+  // UTILIDADES - CORREGIDAS ✅
+  // ========================================
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
-        console.log(tareas);
-      });
-    </script>
-  </body>
+  function getCurrentUser() {
+    try {
+      const userStr = sessionStorage.getItem('user');
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+      console.error('Error al obtener usuario:', error);
+      return null;
+    }
+  }
+
+  // ✅ NUEVA FUNCIÓN: Obtiene el string de la semana actual en formato "YYYY-Www"
+  function getCurrentWeekString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const weekNum = getWeekNumber(now);
+    return `${year}-W${weekNum.toString().padStart(2, '0')}`;
+  }
+
+  // ✅ NUEVA FUNCIÓN: Calcula el número de semana según ISO 8601
+  function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  // ✅ NUEVA FUNCIÓN: Convierte "2024-W47" a la fecha del lunes de esa semana
+  function getMondayFromWeekInput(weekValue) {
+    if (!weekValue) {
+      return getMonday(new Date());
+    }
+
+    // weekValue tiene formato "2024-W47"
+    const [yearStr, weekStr] = weekValue.split('-W');
+    const year = parseInt(yearStr);
+    const week = parseInt(weekStr);
+
+    // Enero 4 siempre está en la semana 1
+    const jan4 = new Date(year, 0, 4);
+    const jan4Day = jan4.getDay() || 7;
+    const jan4Monday = new Date(jan4);
+    jan4Monday.setDate(jan4.getDate() - jan4Day + 1);
+
+    // Sumar las semanas necesarias
+    const targetMonday = new Date(jan4Monday);
+    targetMonday.setDate(jan4Monday.getDate() + (week - 1) * 7);
+
+    return targetMonday;
+  }
+
+  function getMonday(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(d.setDate(diff));
+  }
+
+  function formatDate(date) {
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    return `${days[date.getDay()]} ${date.getDate()}/${date.getMonth() + 1}`;
+  }
+
+  // ========================================
+  // INICIALIZAR
+  // ========================================
+  loadTasks();
+</script>
+</body>
 </html>
