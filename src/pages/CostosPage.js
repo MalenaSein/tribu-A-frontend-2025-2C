@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter } from 'lucide-react';
+import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter, Percent } from 'lucide-react';
 import { ApiService } from '../services/api';
 
 const CostosPage = () => {
@@ -9,6 +9,7 @@ const CostosPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // Estado para los filtros de visualización
     const [filtroMes, setFiltroMes] = useState(new Date().getMonth() + 1);
     const [filtroAnio, setFiltroAnio] = useState(new Date().getFullYear());
 
@@ -20,6 +21,11 @@ const CostosPage = () => {
         mes: new Date().getMonth() + 1,
         anio: new Date().getFullYear()
     });
+
+    // Estado para el ajuste por porcentaje
+    const [usarPorcentaje, setUsarPorcentaje] = useState(false);
+    const [porcentaje, setPorcentaje] = useState('');
+    const [costoBase, setCostoBase] = useState(0);
 
     const [editingId, setEditingId] = useState(null);
 
@@ -74,6 +80,23 @@ const CostosPage = () => {
         return anioCosto === parseInt(filtroAnio) && mesCosto === parseInt(filtroMes)
     });
 
+    // Funcion auxiliar para calcular el valor final con porcentaje
+    const calcularValorConPorcentaje = (valorBase, porc) => {
+        if (!valorBase || isNaN(valorBase) || !porc || isNaN(porc)) return valorBase;
+        const base = parseFloat(valorBase);
+        const p = parseFloat(porc);
+        const resultado = base + (base * (p / 100));
+        return resultado.toFixed(2); // Redondeo a 2 decimales
+    };
+
+    // Efecto para actualizar el campo "Costo" cuando cambia el porcentaje
+    useEffect(() => {
+        if (usarPorcentaje && editingId) {
+            const nuevoValor = calcularValorConPorcentaje(costoBase, porcentaje);
+            setFormData(prev => ({ ...prev, costo: nuevoValor }));
+        }
+    }, [porcentaje, usarPorcentaje, costoBase, editingId]);
+
     const handleEdit = (item) => {
         setEditingId(item.id);
 
@@ -88,6 +111,11 @@ const CostosPage = () => {
                 mesEdit = parseInt(partes[1]);
             }
         }
+
+        // Guardamos el costo base para los calculos
+        setCostoBase(item.costo);
+        setUsarPorcentaje(false);
+        setPorcentaje('');
 
         setFormData({
             rol: item.rolDisplay, 
@@ -124,6 +152,8 @@ const CostosPage = () => {
             
             setIsModalOpen(false);
             setEditingId(null); // Limpiamos el ID de edición
+            setUsarPorcentaje(false);
+            setPorcentaje('');
             
             setFiltroMes(parseInt(formData.mes));
             setFiltroAnio(parseInt(formData.anio));
@@ -132,6 +162,17 @@ const CostosPage = () => {
         } catch(e) { 
             alert("Error al guardar la operación. Verifique los datos"); 
         }
+    };
+
+    const handleNuevoCosto = () => {
+        setFormData({
+            rol: '', seniority: '', costo: '',
+            mes: filtroMes,
+            anio: filtroAnio
+        });
+        setEditingId(null);
+        setUsarPorcentaje(false);
+        setIsModalOpen(true);
     };
 
     // Funcion auxiliar para formatear la fecha visualmente en la tabla
@@ -208,16 +249,7 @@ const CostosPage = () => {
                     </div>
 
                     <button 
-                        onClick={() => {
-                            // Pre-cargamos el modal con el mes/año que el usuario está viendo
-                            setFormData({ 
-                                rol: '', seniority: '', costo: '', 
-                                mes: filtroMes, 
-                                anio: filtroAnio 
-                            });
-                            setEditingId(null);
-                            setIsModalOpen(true);
-                        }} 
+                        onClick={handleNuevoCosto} 
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition w-full md:w-auto justify-center"
                     >
                         <Plus size={18} /> Nueva Tarifa
@@ -238,7 +270,7 @@ const CostosPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {loading ? (
-                                <tr><td colSpan="4" className="p-8 text-center"><Loader className="animate-spin mx-auto text-blue-500"/></td></tr>
+                                <tr><td colSpan="5" className="p-8 text-center"><Loader className="animate-spin mx-auto text-blue-500"/></td></tr>
                             ) : (
                                 costosFiltrados.length > 0 ? (
                                     costosFiltrados.map((c, index) => (
@@ -270,7 +302,7 @@ const CostosPage = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="px-6 py-12 text-center text-gray-500">
+                                        <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
                                             No hay tarifas cargadas para <b>{MESES[filtroMes-1].nombre} {filtroAnio}</b>.
                                         </td>
                                     </tr>
@@ -352,16 +384,75 @@ const CostosPage = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Costo (USD)</label>
-                                    <input 
-                                        type="number" 
-                                        className="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500" 
-                                        required 
-                                        placeholder="0.00"
-                                        value={formData.costo}
-                                        onChange={e => setFormData({...formData, costo: e.target.value})}
-                                    />
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                        <input 
+                                            type="number" 
+                                            className={`w-full border rounded-lg p-2 pl-6 focus:ring-2 focus:ring-blue-500 ${
+                                                usarPorcentaje ? 'bg-gray-100 text-gray-500' : 'border-gray-300'
+                                            }`}
+                                            required 
+                                            placeholder="0.00"
+                                            value={formData.costo}
+                                            readOnly={usarPorcentaje} // Bloqueado si se usa porcentaje
+                                            onChange={e => setFormData({...formData, costo: e.target.value})}
+                                        />
+                                    </div>
                                 </div>
                              </div>
+
+                             {/* SECCIÓN DE AJUSTE POR PORCENTAJE (SOLO EN EDICIÓN) */}
+                             {editingId && (
+                                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="checkbox" 
+                                                id="usarPorcentaje"
+                                                checked={usarPorcentaje}
+                                                onChange={(e) => {
+                                                    setUsarPorcentaje(e.target.checked);
+                                                    if (!e.target.checked) {
+                                                        // Si desmarca, volvemos al valor original
+                                                        setFormData(prev => ({ ...prev, costo: costoBase }));
+                                                        setPorcentaje('');
+                                                    }
+                                                }}
+                                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                            />
+                                            <label htmlFor="usarPorcentaje" className="text-sm font-medium text-gray-700 cursor-pointer">
+                                                Ajustar por porcentaje
+                                            </label>
+                                        </div>
+                                        <Percent className="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    
+                                    {usarPorcentaje && (
+                                        <div className="animate-fade-in">
+                                            <div className="flex items-center gap-3">
+                                                <div className="relative w-1/2">
+                                                    <input 
+                                                        type="number" 
+                                                        placeholder="Ej: 10"
+                                                        className="w-full border border-gray-300 rounded-lg p-2 pr-8"
+                                                        value={porcentaje}
+                                                        onChange={(e) => setPorcentaje(e.target.value)}
+                                                    />
+                                                    <span className="absolute right-3 top-2 text-gray-500">%</span>
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    Valor base: <strong>${costoBase}</strong>
+                                                    <br/>
+                                                    Nuevo valor: <strong>${formData.costo}</strong>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-blue-600 mt-2">
+                                                * Ingrese valores negativos (ej: -10) para descuentos.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                             )}
 
                             <div className="flex justify-end gap-3 mt-6">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Cancelar</button>
