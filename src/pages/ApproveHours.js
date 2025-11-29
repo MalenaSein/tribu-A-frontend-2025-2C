@@ -72,28 +72,43 @@ const ApproveHours = () => {
     };
 
     // ✅ Renderizar tabla detallada de horas (ahora con datos reales)
+    // ✅ REEMPLAZAR LA FUNCIÓN renderDetailedHours EN ApproveHours.js
+
     const renderDetailedHours = (entry) => {
         const daysOfWeek = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE'];
 
-        // ✅ En el futuro, este detalle podría venir del backend
-        // Por ahora mostramos la info básica del entry seleccionado
+        // ✅ CALCULAR EL ÍNDICE CORRECTO DEL DÍA
+        const workDate = new Date(entry.workDate + 'T00:00:00');
+        const dayOfWeek = workDate.getDay(); // 0=Domingo, 1=Lunes, ..., 5=Viernes, 6=Sábado
+
+        // Convertir a índice de array (0=Lunes, 1=Martes, ..., 4=Viernes)
+        let dayIndex;
+        if (dayOfWeek === 0) { // Domingo
+            dayIndex = -1; // No debería pasar, pero por las dudas
+        } else if (dayOfWeek === 6) { // Sábado
+            dayIndex = -1; // No debería pasar
+        } else {
+            dayIndex = dayOfWeek - 1; // 1(Lun)→0, 2(Mar)→1, 3(Mié)→2, 4(Jue)→3, 5(Vie)→4
+        }
+
+        // ✅ CREAR ARRAY DE HORAS CON EL VALOR EN EL DÍA CORRECTO
+        const hoursArray = [0, 0, 0, 0, 0]; // Inicializar todo en 0
+        if (dayIndex >= 0 && dayIndex < 5) {
+            hoursArray[dayIndex] = entry.totalHours || (entry.workedMinutes / 60);
+        }
+
         const detailedTasks = [
             {
                 project: entry.projectName || entry.projectId,
                 task: entry.taskName || entry.taskId || 'Sin tarea',
-                hours: [entry.totalHours || 0, 0, 0, 0, 0] // Simplificado por ahora
+                hours: hoursArray // ✅ Ahora con el día correcto
             }
         ];
-
-        const dayTotals = daysOfWeek.map((_, i) =>
-            detailedTasks.reduce((sum, task) => sum + (task.hours[i] || 0), 0)
-        );
-        const grandTotal = dayTotals.reduce((a, b) => a + b, 0);
 
         return (
             <div className="mt-6">
                 <h3 className="text-xl font-bold mb-4 text-blue-700">
-                    Detalle de la Semana {entry.week}
+                    Detalle de la Tarea en la Semana {entry.week}
                 </h3>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
@@ -110,9 +125,6 @@ const ApproveHours = () => {
                                     {day}
                                 </th>
                             ))}
-                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider bg-gray-100">
-                                TOTAL
-                            </th>
                         </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -121,28 +133,12 @@ const ApproveHours = () => {
                                 <td className="px-6 py-4 font-medium text-gray-800">{task.project}</td>
                                 <td className="px-6 py-4 text-sm text-gray-600">{task.task}</td>
                                 {task.hours.map((h, i) => (
-                                    <td key={i} className="px-3 py-4 text-center text-sm">
+                                    <td key={i} className="px-3 py-4 text-center text-sm font-bold">
                                         {h > 0 ? h.toFixed(1) : '-'}
                                     </td>
                                 ))}
-                                <td className="px-6 py-4 text-center font-bold text-gray-900 bg-gray-50">
-                                    {task.hours.reduce((a, b) => a + b, 0).toFixed(1)}
-                                </td>
                             </tr>
                         ))}
-                        <tr className="bg-blue-100 font-bold border-t-4 border-blue-600">
-                            <td colSpan="2" className="px-6 py-3 text-left text-sm text-gray-900">
-                                TOTAL POR DÍA
-                            </td>
-                            {dayTotals.map((total, i) => (
-                                <td key={i} className="px-3 py-3 text-center text-sm text-gray-900">
-                                    {total > 0 ? total.toFixed(1) : '-'}
-                                </td>
-                            ))}
-                            <td className="px-6 py-3 text-center text-lg text-blue-800 bg-blue-200">
-                                {grandTotal.toFixed(1)}
-                            </td>
-                        </tr>
                         </tbody>
                     </table>
                 </div>
@@ -150,7 +146,12 @@ const ApproveHours = () => {
                 {/* ℹ️ Info adicional */}
                 <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <p className="text-sm text-gray-700">
-                        <strong>Fecha:</strong> {new Date(entry.workDate + 'T00:00:00').toLocaleDateString('es-AR')} •
+                        <strong>Fecha:</strong> {workDate.toLocaleDateString('es-AR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    })} •
                         <strong className="ml-2">Empleado:</strong> {entry.employeeName} •
                         <strong className="ml-2">Descripción:</strong> {entry.description || 'Sin descripción'}
                     </p>
@@ -158,7 +159,6 @@ const ApproveHours = () => {
             </div>
         );
     };
-
     return (
         <div className="min-h-screen bg-gray-100 font-sans text-gray-900">
             <Header
