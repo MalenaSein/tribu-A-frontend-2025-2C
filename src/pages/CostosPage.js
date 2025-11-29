@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter, Layers } from 'lucide-react';
 import { ApiService } from '../services/api';
+import AuthService from '../services/AuthService';
 
 const CostosPage = () => {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
+    const user = AuthService.getCurrentUser();
     const [costos, setCostos] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -260,7 +262,7 @@ const CostosPage = () => {
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center gap-4">
                             <button 
-                                onClick={() => navigate('/dashboard')}
+                                onClick={() => navigate('/finanzas/dashboard')}
                                 className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors"
                                 title="Volver al Menú"
                             >
@@ -271,8 +273,10 @@ const CostosPage = () => {
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <span className="hidden sm:block font-medium text-gray-500">José Ratio</span>
-                            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">JR</div>
+                            <span className="hidden sm:block font-medium text-gray-500">{user?.name || 'Manager'}</span>
+                            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                                {user?.name?.charAt(0) || 'M'}
+                            </div>
                         </div>
                     </div>
                 </div>
