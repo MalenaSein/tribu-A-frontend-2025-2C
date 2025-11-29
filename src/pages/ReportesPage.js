@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Calendar, RefreshCw } from 'lucide-react';
 import { ApiService } from '../services/api';
+import AuthService from '../services/AuthService';
 
 const ReportesPage = () => {
     const navigate = useNavigate();
+    const user = AuthService.getCurrentUser();
     const [proyectos, setProyectos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [busqueda, setBusqueda] = useState('');
@@ -55,7 +57,7 @@ const ReportesPage = () => {
                 <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => navigate('/dashboard')} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors">
+                            <button onClick={() => navigate('/finanzas/dashboard')} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 transition-colors">
                                 <ArrowLeft className="h-6 w-6" />
                             </button>
                             <div className="border-l border-gray-200 pl-4 h-8 flex items-center">
@@ -63,8 +65,10 @@ const ReportesPage = () => {
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <span className="hidden sm:block font-medium text-gray-500">José Ratio</span>
-                            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">JR</div>
+                            <span className="hidden sm:block font-medium text-gray-500">{user?.name || 'Manager'}</span>
+                            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                                {user?.name?.charAt(0) || 'M'}
+                            </div>
                         </div>
                     </div>
                 </div>

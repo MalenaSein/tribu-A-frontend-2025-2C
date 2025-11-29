@@ -8,9 +8,11 @@ import {
   Settings,
   ArrowLeft
 } from 'lucide-react';
+import AuthService from '../services/AuthService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const user = AuthService.getCurrentUser();
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 text-gray-900 font-sans">
@@ -41,9 +43,9 @@ const Dashboard = () => {
 
             {/* Derecha: Usuario */}
             <div className="flex items-center space-x-4">
-              <span className="hidden sm:block font-medium text-gray-500">José Ratio</span>
+              <span className="hidden sm:block font-medium text-gray-500">{user?.name || 'Manager'}</span>
               <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                JR
+                {user?.name?.charAt(0) || 'M'}
               </div>
             </div>
           </div>
@@ -67,7 +69,7 @@ const Dashboard = () => {
             
             {/* 1. Botón: Configuración de Costos */}
             <div 
-              onClick={() => navigate('/costos')}
+              onClick={() => navigate('/finanzas/costos')}
               className="group cursor-pointer block p-8 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
               <div className="flex flex-col items-center text-center">
@@ -121,7 +123,7 @@ const Dashboard = () => {
 
             {/* 4. Botón: Reportes */}
             <div 
-              onClick={() => navigate('/reportes')}
+              onClick={() => navigate('/finanzas/reportes')}
               className="group cursor-pointer block p-8 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
             >
               <div className="flex flex-col items-center text-center">
