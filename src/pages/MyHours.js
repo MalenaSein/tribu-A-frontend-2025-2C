@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, Send, Trash2, Loader, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Clock, Send, Trash2, Loader, CheckCircle, AlertCircle } from 'lucide-react';
 import AuthService from '../services/AuthService';
 import APIClient from '../services/APIClient';
 import Header from '../components/Header';
@@ -41,6 +41,14 @@ const MyHours = () => {
 
             setEntries(sorted);
             console.log('✅ Horas cargadas:', sorted.length);
+
+            // 🔍 DEBUG: Ver qué datos vienen del backend
+            if (sorted.length > 0) {
+                console.log('🔍 Primera entrada:', sorted[0]);
+                console.log('🔍 Campos disponibles:', Object.keys(sorted[0]));
+                console.log('🔍 projectName:', sorted[0].projectName);
+                console.log('🔍 taskName:', sorted[0].taskName);
+            }
         } catch (err) {
             console.error('❌ Error al cargar horas:', err);
             setError('Error al cargar tus horas: ' + err.message);
@@ -136,6 +144,24 @@ const MyHours = () => {
             month: '2-digit',
             year: 'numeric'
         });
+    };
+
+    // ✅ HELPERS PARA MOSTRAR NOMBRES
+    const getProjectDisplay = (entry) => {
+        if (entry.projectName) {
+            return entry.projectName;
+        }
+        return entry.projectId.substring(0, 12) + '...';
+    };
+
+    const getTaskDisplay = (entry) => {
+        if (entry.taskName && entry.taskName !== 'Sin tarea asignada') {
+            return entry.taskName;
+        }
+        if (entry.taskId) {
+            return entry.taskId.substring(0, 12) + '...';
+        }
+        return 'Sin tarea';
     };
 
     // Agrupar por estado
@@ -280,20 +306,20 @@ const MyHours = () => {
                                             <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                                 {formatDate(entry.workDate)}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {entry.projectId.substring(0, 8)}...
+                                            <td className="px-6 py-4 text-sm text-gray-600" title={entry.projectId}>
+                                                {getProjectDisplay(entry)}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {entry.taskId ? entry.taskId.substring(0, 8) + '...' : 'Sin tarea'}
+                                            <td className="px-6 py-4 text-sm text-gray-600" title={entry.taskId}>
+                                                {getTaskDisplay(entry)}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-right font-bold text-gray-900">
                                                 {hours} hs
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                    <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
-                                                        <StatusIcon size={14} />
-                                                        {statusInfo.text}
-                                                    </span>
+                                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${statusInfo.color}`}>
+                                                    <StatusIcon size={14} />
+                                                    {statusInfo.text}
+                                                </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 {canDelete && (
@@ -332,10 +358,6 @@ const MyHours = () => {
         </div>
     );
 };
-
-// ========================================
-// COMPONENTE HEADER
-// ========================================
 
 // ========================================
 // COMPONENTE STATCARD
