@@ -30,6 +30,7 @@ import ProjectCostReport from './pages/ProjectCostReport';
 import ProjectSelection from './pages/ProjectSelection';
 import HourEntry from './pages/HourEntry';
 import MyHours from './pages/MyHours';
+import ManualTimeEntry from './pages/ManualTimeEntry';
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
           <Route path="/desarrollador/seleccion-proyectos" element={<ProjectSelection />} />
           <Route path="/desarrollador/carga-horas" element={<HourEntry />} />
           <Route path="/desarrollador/mis-horas" element={<MyHours />} />
+          <Route path="/desarrollador/carga-horas-manual" element={<ManualTimeEntry />} />
 
         </Routes>
       </div>

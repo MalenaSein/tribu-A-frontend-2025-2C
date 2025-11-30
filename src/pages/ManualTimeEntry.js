@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useSearchParams, createSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Calendar, Loader, Folder, Send, Save, AlertCircle, Clock, Hand } from 'lucide-react';
 import Header from '../components/Header';
 import AuthService from '../services/AuthService';
 import APIClient from '../services/APIClient';
 import { dateUtils } from '../utils/dateUtils';
 
-const HourEntry = () => {
+const ManualTimeEntry = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const projectId = searchParams.get('projectId');
@@ -22,6 +22,7 @@ const HourEntry = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [savedEntryIds, setSavedEntryIds] = useState([]);
+    const [newTaskName, setNewTaskName] = useState("");
 
     const days = useMemo(() => ['mon', 'tue', 'wed', 'thu', 'fri'], []);
 
@@ -48,15 +49,8 @@ const HourEntry = () => {
             setLoading(true);
             setError(null);
             try {
-                console.log('📋 Cargando tareas del proyecto:', projectId);
-                const loadedTasks = await APIClient.getTasksByProject(projectId);
-
-                if (!loadedTasks || loadedTasks.length === 0) {
-                    setError('No hay tareas disponibles en este proyecto');
-                    setTasks([]);
-                    return;
-                }
-
+                console.log('📋 Creando tarea vacia:', projectId);
+                let loadedTasks = [{id: crypto.randomUUID() , nombre: newTaskName}];
                 setTasks(loadedTasks);
 
                 // Inicializar estructura de datos de horas
@@ -164,7 +158,7 @@ const HourEntry = () => {
                             taskId: task.id,
                             workDate: workDate.toISOString().split('T')[0],
                             workedMinutes: Math.round(hours * 60),
-                            description: `${task.nombre} - ${dateUtils.formatDate(workDate)}`
+                            description: `${newTaskName} - ${dateUtils.formatDate(workDate)}`
                         });
                     }
                 });
@@ -182,7 +176,8 @@ const HourEntry = () => {
 
             // ✅ LIMPIAR LA TABLA DESPUÉS DE GUARDAR EXITOSAMENTE
             resetTable();
-
+            // limpiar el campo nombre
+            setNewTaskName("");
             alert(`✅ Se guardaron ${entriesToSave.length} registros como BORRADOR!\n\n📝 Ahora puedes enviarlos a aprobación usando el botón "Enviar a Supervisor".`);
 
         } catch (err) {
@@ -353,7 +348,16 @@ const HourEntry = () => {
                                 {tasks.map(task => (
                                     <tr key={task.id} className="hover:bg-blue-50 transition-colors">
                                         <td className="px-6 py-4 font-medium text-gray-800">
-                                            {task.nombre}
+                                        {/* {task.nombre} */}
+                                            <form>
+                                            <input placeholder='nombre de la tarea' required 
+                                            value={newTaskName}
+                                            onChange={e => {
+                                                console.log("cambiando el nombre de la task ", newTaskName)
+                                                setNewTaskName(e.target.value)
+                                            }}/>
+                                            </form>
+                                            {/* nombre tarea */}
                                         </td>
                                         {days.map(day => (
                                             <td key={day} className="px-3 py-2 text-center">
@@ -412,24 +416,6 @@ const HourEntry = () => {
                                 >
                                     <Clock size={18} /> Ver Mis Horas
                                 </button>
-                                <button
-                                    type="button"
-                                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                                    onClick={() => {
-                                        localStorage.setItem('lastProject', JSON.stringify({
-                                            projectId: projectId,
-                                            projectName: projectName
-                                        }));
-                                        console.log("hola cornudo")
-                                        navigate(
-                                             `/desarrollador/carga-horas-manual?projectId=${projectId}&projectName=${projectName}`, 
-                                            
-                                        
-                                        );
-                                    }}
-                                >
-                                    <Hand size={18} /> Cargar tarea manualmente
-                                </button>
                             </div>
 
                             {/* DERECHA: Acciones */}
@@ -439,7 +425,7 @@ const HourEntry = () => {
                                     type="button"
                                     className="flex items-center justify-center gap-2 px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     onClick={saveHours}
-                                    disabled={isSaving || totals.grandTotal === 0 || isWeekClosed(weekValue)}
+                                    disabled={isSaving || totals.grandTotal === 0 || isWeekClosed(weekValue) || newTaskName.length==0}
                                 >
                                     {isSaving ? (
                                         <>
@@ -493,4 +479,4 @@ const HourEntry = () => {
     );
 };
 
-export default HourEntry;
+export default ManualTimeEntry;
