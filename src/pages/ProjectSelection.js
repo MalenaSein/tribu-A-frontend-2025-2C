@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Folder, ArrowLeft } from 'lucide-react';
+import { Folder, ArrowLeft, Clock } from 'lucide-react';
 import Header from '../components/Header';
 import LoadingState from '../components/LoadingState';
 import AuthService from '../services/AuthService';
@@ -50,6 +50,17 @@ const ProjectSelection = () => {
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Botón Ver Mis Horas */}
+                <div className="mb-6 flex justify-end">
+                    <button
+                        onClick={() => navigate('/desarrollador/mis-horas')}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                        <Clock size={20} />
+                        Ver Mis Horas
+                    </button>
+                </div>
+
                 {loading && <LoadingState message="Cargando tus proyectos..." />}
 
                 {error && (
@@ -93,5 +104,4 @@ const ProjectSelection = () => {
     );
 };
 
-// Al final del archivo
 export default ProjectSelection;
