@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, LogOut } from 'lucide-react';
 import AuthService from '../services/AuthService';
 
 const Header = ({ title, subtitle, showBack = false, backPath, backLabel = "Volver" }) => {
@@ -11,7 +11,14 @@ const Header = ({ title, subtitle, showBack = false, backPath, backLabel = "Volv
         if (backPath) {
             navigate(backPath);
         } else {
-            navigate(-1); // Volver a la página anterior
+            navigate(-1);
+        }
+    };
+
+    const handleLogout = () => {
+        if (window.confirm('¿Está seguro que desea cerrar sesión?')) {
+            AuthService.logout();
+            navigate('/');
         }
     };
 
@@ -36,14 +43,21 @@ const Header = ({ title, subtitle, showBack = false, backPath, backLabel = "Volv
                         </div>
                     </div>
 
-                    {/* DERECHA: Info del usuario */}
-                    <div className="flex items-center space-x-4">
+                    {/* DERECHA: Info del usuario + Logout */}
+                    <div className="flex items-center space-x-3">
                         <span className="hidden sm:block font-medium text-gray-500">
                             {user?.name || 'Usuario'}
                         </span>
                         <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
                             {user?.name?.charAt(0) || 'U'}
                         </div>
+                        <button
+                            onClick={handleLogout}
+                            className="p-2 rounded-full text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                            title="Cerrar Sesión"
+                        >
+                            <LogOut className="h-5 w-5" />
+                        </button>
                     </div>
                 </div>
             </div>
