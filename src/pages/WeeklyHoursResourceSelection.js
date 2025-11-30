@@ -5,6 +5,9 @@ import Header from '../components/Header';
 import LoadingState from '../components/LoadingState';
 import APIClient from '../services/APIClient';
 
+// ✅ ID del rol de Manager (Horacio)
+const ROL_ID_MANAGER = "6e6ecd47-fa18-490e-b25a-c9101a398b6d";
+
 const WeeklyHoursResourceSelection = () => {
     const navigate = useNavigate();
     const [resources, setResources] = useState([]);
@@ -17,7 +20,16 @@ const WeeklyHoursResourceSelection = () => {
             setError(null);
             try {
                 const data = await APIClient.getAllResources();
-                setResources(data);
+
+                // ✅ FILTRAR: Excluir empleados con rol de MANAGER
+                const filteredResources = data.filter(resource =>
+                    resource.rolId !== ROL_ID_MANAGER
+                );
+
+                console.log(`📊 Total empleados: ${data.length}`);
+                console.log(`✅ Empleados (sin managers): ${filteredResources.length}`);
+
+                setResources(filteredResources);
             } catch (err) {
                 setError(`Error al cargar empleados: ${err.message}`);
             } finally {
@@ -49,7 +61,12 @@ const WeeklyHoursResourceSelection = () => {
                                         onClick={() => navigate(`/manager/reportes/reporte-recurso?id=${resource.id}&nombre=${resource.nombre}&apellido=${resource.apellido}`)}
                                         className="w-full text-left p-4 flex justify-between items-center text-gray-900 font-medium"
                                     >
-                                        {`${resource.nombre} ${resource.apellido}`}
+                                        <div>
+                                            <span className="text-base">{`${resource.nombre} ${resource.apellido}`}</span>
+                                            <span className="text-sm text-gray-500 ml-2">
+                                                (Desarrollador)
+                                            </span>
+                                        </div>
                                         <ArrowLeft size={20} className="rotate-180 text-blue-500" />
                                     </button>
                                 </li>
@@ -60,7 +77,10 @@ const WeeklyHoursResourceSelection = () => {
                 {!loading && resources.length === 0 && !error && (
                     <div className="text-center p-10 bg-white rounded-xl shadow-sm border border-gray-200">
                         <Users className="h-10 w-10 text-gray-400 mx-auto mb-4" />
-                        <p className="text-lg font-medium">No hay empleados disponibles.</p>
+                        <p className="text-lg font-medium">No hay empleados disponibles para reportes.</p>
+                        <p className="text-sm text-gray-500 mt-2">
+                            Los managers no aparecen en esta lista.
+                        </p>
                     </div>
                 )}
             </main>
@@ -68,5 +88,4 @@ const WeeklyHoursResourceSelection = () => {
     );
 };
 
-// Al final del archivo
 export default WeeklyHoursResourceSelection;

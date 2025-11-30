@@ -1,11 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, BarChart3, ArrowLeft } from 'lucide-react';
+import { Check, BarChart3, ArrowLeft, LogOut } from 'lucide-react';
 import AuthService from '../services/AuthService';
 
 const TimeEntryDashboard = () => {
     const navigate = useNavigate();
     const user = AuthService.getCurrentUser();
+
+    const handleLogout = () => {
+        if (window.confirm('¿Está seguro que desea cerrar sesión?')) {
+            AuthService.logout();
+            navigate('/');
+        }
+    };
 
     const CardModule = ({ icon: Icon, title, description, bgColor, path, disabled }) => {
         const handleClick = () => {
@@ -50,13 +57,20 @@ const TimeEntryDashboard = () => {
                                 <span className="text-sm text-gray-500">Panel de Gestión</span>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-4">
+                        <div className="flex items-center space-x-3">
                             <span className="hidden sm:block font-medium text-gray-500">
                                 {user?.name || 'Manager'}
                             </span>
                             <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
                                 {user?.name?.charAt(0) || 'M'}
                             </div>
+                            <button
+                                onClick={handleLogout}
+                                className="p-2 rounded-full text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                                title="Cerrar Sesión"
+                            >
+                                <LogOut className="h-5 w-5" />
+                            </button>
                         </div>
                     </div>
                 </div>
