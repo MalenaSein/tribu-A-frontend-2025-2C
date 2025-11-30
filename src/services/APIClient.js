@@ -1,5 +1,5 @@
 // APIClient.js - Configurado para Spring Boot Backend
-const URL_BASE = window.APP_CONFIG?.API_BASE_URL || "http://localhost:8080";
+const URL_BASE = window.APP_CONFIG?.API_BASE_URL || process.env.REACT_APP_API_BASE_URL;
 
 // Endpoints del backend (coinciden con los controllers)
 const ENDPOINT_RECURSOS = "/api/resources"

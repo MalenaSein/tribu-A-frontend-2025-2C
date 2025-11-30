@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8080/api"; 
+const BASE_URL = "https://tpg-squad-5-2025-2c.onrender.com/api"; 
 
 export const ApiService = {
 
