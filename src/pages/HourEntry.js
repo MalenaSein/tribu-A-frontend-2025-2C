@@ -180,6 +180,9 @@ const HourEntry = () => {
 
             setSavedEntryIds(newEntryIds);
 
+            // ✅ LIMPIAR LA TABLA DESPUÉS DE GUARDAR EXITOSAMENTE
+            resetTable();
+
             alert(`✅ Se guardaron ${entriesToSave.length} registros como BORRADOR!\n\n📝 Ahora puedes enviarlos a aprobación usando el botón "Enviar a Supervisor".`);
 
         } catch (err) {
