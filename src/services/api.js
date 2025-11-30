@@ -89,5 +89,33 @@ export const ApiService = {
             console.error("Error obteniendo reporte:", error);
             throw error;
         }
-    }
+    },
+
+	// 6. Obtener Nombre roles (GET)
+	obtenerNombreRoles: async () => {
+	    try {
+	        const response = await fetch(`${BASE_URL}/roles/nombres`);
+	        if (!response.ok) {
+	            throw new Error(`Error ${response.status}: No se pudieron cargar los nombres roles.`);
+	        }
+	        return await response.json();
+	    } catch (error) {
+	        console.error("Error de red o servidor:", error);
+	        throw error;
+	    }
+	},
+
+	// 7. Obtener Experiencias roles (GET)
+	obtenerExperienciasRoles: async () => {
+	    try {
+	        const response = await fetch(`${BASE_URL}/roles/experiencias`);
+	        if (!response.ok) {
+	            throw new Error(`Error ${response.status}: No se pudieron cargar las experiencias roles.`);
+	        }
+	        return await response.json();
+	    } catch (error) {
+	        console.error("Error de red o servidor:", error);
+	        throw error;
+	    }
+	}	
 };
