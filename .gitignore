@@ -1,0 +1,7 @@
+/data
+/build
+/gradle
+.gradle
+.idea
+node_modules
+.clj-kondo
