@@ -174,8 +174,8 @@ let APIClient = {
     // src/services/APIClient.js
 
     getProjectResourcesReport: async function(projectId, year) {
-        // ✅ NUEVO ENDPOINT
         const url = `${URL_BASE}${ENDPOINT_REPORTES}/project-costs/${year}/${projectId}`;
+        console.log('📊 Llamando a:', url);
         return getData(url);
     },
     // ========== AUTENTICACIÓN ==========
@@ -199,7 +199,7 @@ let APIClient = {
 
     getResourcesByProjectAndYear: async function(projectId, year) {
         const month = `${year}-01-01`;
-        return this.getProjectResourcesReport(projectId, month);
+        return this.getProjectResourcesReport(projectId, year);
     }
 }
 

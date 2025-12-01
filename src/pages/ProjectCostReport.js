@@ -38,18 +38,35 @@ const ProjectCostReport = () => {
         setReport(null);
 
         try {
-            console.log('📊 Generando reporte para año:', year);
+            console.log('📊 Generando reporte para proyecto:', projectId, 'año:', year);
+
+            // CAMBIO IMPORTANTE: Usar el método correcto con los parámetros en el orden correcto
             const reporteData = await APIClient.getProjectResourcesReport(projectId, year);
+
             console.log('✅ Reporte recibido:', reporteData);
+
+            // Validar estructura del reporte
+            if (!reporteData) {
+                throw new Error('El servidor no devolvió datos');
+            }
+
+            if (!reporteData.resources || Object.keys(reporteData.resources).length === 0) {
+                console.warn('⚠️ No hay recursos en el reporte');
+            }
+
+            if (!reporteData.months || reporteData.months.length === 0) {
+                console.warn('⚠️ No hay datos mensuales en el reporte');
+            }
+
             setReport(reporteData);
+
         } catch (err) {
-            console.error('❌ Error:', err);
+            console.error('❌ Error completo:', err);
             setError(`Error al generar reporte: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
-
     useEffect(() => {
         if (projectId && year) generarReporte();
     }, [projectId, year]);
