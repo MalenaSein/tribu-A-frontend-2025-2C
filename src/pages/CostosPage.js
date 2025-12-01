@@ -11,9 +11,8 @@ const CostosPage = () => {
     const [costos, setCostos] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Listas para selects dinámicos
-    const [roles, setRoles] = useState([]);              
-    const [experiencias, setExperiencias] = useState([]); 
+    // Catálogo completo de roles (ID, Nombre, Experiencia)
+    const [allRolesData, setAllRolesData] = useState([]);
 
     // Modales
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,25 +52,26 @@ const CostosPage = () => {
         { id: 10, nombre: 'Octubre' }, { id: 11, nombre: 'Noviembre' }, { id: 12, nombre: 'Diciembre' }
     ];
 
+    // --- Lógica de carga de datos ---
     const loadData = async () => {
         setLoading(true);
         try {
-            const data = await ApiService.obtenerCostosVigentes();
+            // 1. Traemos Costos y Roles (objetos completos) en paralelo
+            const [dataCostos, dataRolesCompletos] = await Promise.all([
+                ApiService.obtenerCostosVigentes(),
+                ApiService.obtenerTodosLosRoles() 
+            ]);
 
-            const datosProcesados = data.map(item => {
-                const rolCompleto = item.rolId || item.rol || '';
-                let rolDisplay = rolCompleto;
-                let seniorityDisplay = item.seniority || 'N/A';
+            // Guardamos el catálogo completo para usarlo en el formulario
+            setAllRolesData(dataRolesCompletos || []);
 
-                if ((!item.seniority || item.seniority === 'N/A') && rolCompleto.includes(' ')) {
-                    const partes = rolCompleto.split(' ');
-                    const posibleSeniority = partes[partes.length - 1];
-                    if (['Senior', 'Semi-Senior', 'Junior'].includes(posibleSeniority)) {
-                        seniorityDisplay = posibleSeniority;
-                        rolDisplay = partes.slice(0, -1).join(' ');
-                    }
-                }
+            // 2. Cruzamos la información para la tabla
+            const datosProcesados = dataCostos.map(item => {
+                const rolEncontrado = dataRolesCompletos.find(r => r.id === item.rolId);
                 
+                const rolDisplay = rolEncontrado ? rolEncontrado.nombre : 'Rol Desconocido';
+                const seniorityDisplay = rolEncontrado ? rolEncontrado.experiencia : 'N/A';
+
                 return { ...item, rolDisplay, seniorityDisplay };
             });
             
@@ -83,28 +83,8 @@ const CostosPage = () => {
         }
     };
 
-	const loadRoles = async () => {
-	  try {
-	    const data = await ApiService.obtenerNombreRoles(); 
-	    setRoles(data || []);
-	  } catch (error) {
-	    console.error("Error cargando roles->", error);
-	  }
-	};
-
-	const loadExperiencias = async () => {
-	  try {
-	    const data = await ApiService.obtenerExperienciasRoles();
-	    setExperiencias(data || []);
-	  } catch (error) {
-	    console.error("Error cargando experiencias->", error);
-	  }
-	};
-
     useEffect(() => {
         loadData();
-        loadRoles();
-        loadExperiencias();
     }, []);
 
     const costosFiltrados = costos.filter(c => {
@@ -129,6 +109,15 @@ const CostosPage = () => {
             setFormData(prev => ({ ...prev, costo: nuevoValor }));
         }
     }, [porcentaje, usarPorcentaje, costoBase, editingId]);
+
+    // Obtener lista de Nombres de Roles Únicos para el select
+    const uniqueRoles = [...new Set(allRolesData.map(r => r.nombre))].sort();
+
+    // Obtener lista de Experiencias filtradas por el Rol seleccionado
+    const filteredExperiencias = allRolesData
+        .filter(r => r.nombre === formData.rol)
+        .map(r => r.experiencia)
+        .sort();
 
     const handleEdit = (item) => {
         setEditingId(item.id);
@@ -175,9 +164,35 @@ const CostosPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         
+        // --- VALIDACIÓN DE DUPLICADOS ---
+        const existeDuplicado = costos.some(c => {
+            // Si estamos editando, no comparamos contra el mismo registro
+            if (editingId && c.id === editingId) return false;
+
+            // Obtenemos mes y año del costo existente
+            if (!c.fecha) return false;
+            const [anioStr, mesStr] = c.fecha.split('-');
+            const anioCosto = parseInt(anioStr);
+            const mesCosto = parseInt(mesStr);
+
+            // Comparamos: Rol (nombre), Seniority, Mes y Año
+            return (
+                c.rolDisplay === formData.rol &&
+                c.seniorityDisplay === formData.seniority &&
+                anioCosto === parseInt(formData.anio) &&
+                mesCosto === parseInt(formData.mes)
+            );
+        });
+
+        if (existeDuplicado) {
+            alert(`Ya existe un costo registrado para el rol "${formData.rol}" (${formData.seniority}) en este período.`);
+            return; // Detenemos la ejecución aquí
+        }
+
         const datosCosto = { 
-            rolId: formData.rol,
-            seniority: formData.seniority,
+            rolId: formData.rol, // Nombre del rol (el backend busca el ID)
+            nombre: formData.rol, 
+            experiencia: formData.seniority,
             costo: formData.costo.toString(),
             mes: parseInt(formData.mes),
             anio: parseInt(formData.anio)
@@ -185,6 +200,7 @@ const CostosPage = () => {
 
         try {
             if (editingId) {
+                // Para update, el ID del costo viaja en la URL
                 await ApiService.actualizarCosto(editingId, datosCosto);
                 alert("Costo mensual actualizado correctamente");
             } else {
@@ -197,6 +213,7 @@ const CostosPage = () => {
             setUsarPorcentaje(false);
             setPorcentaje('');
             
+            // Actualizamos filtros para ver el nuevo dato creado
             setFiltroMes(parseInt(formData.mes));
             setFiltroAnio(parseInt(formData.anio));
 
@@ -246,8 +263,6 @@ const CostosPage = () => {
                 const nuevoValor = calcularValorConPorcentaje(costo.costo, massFormData.porcentaje);
 
                 const datosCosto = {
-                    rolId: costo.rolDisplay,
-                    seniority: costo.seniorityDisplay !== 'N/A' ? costo.seniorityDisplay : '',
                     costo: nuevoValor.toString(),
                     mes: parseInt(massFormData.mes),
                     anio: parseInt(massFormData.anio)
@@ -378,8 +393,8 @@ const CostosPage = () => {
                                 <th className="px-6 py-4 font-semibold">Nombre del Rol</th>
                                 <th className="px-6 py-4 font-semibold">Experiencia</th>
                                 <th className="px-6 py-4 font-semibold">Costo Mensual</th>
-                                <th className="px-6 py-4 font-semibold">Mes de Vigencia</th>
-                                <th className="px-6 py-4 font-semibold text-right">Acciones</th>
+                                <th className="px-6 py-4 font-semibold min-w-[150px]">Mes de Vigencia</th>
+                                <th className="px-6 py-4 font-semibold text-right min-w-[120px]">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -508,7 +523,7 @@ const CostosPage = () => {
                                     disabled={!!editingId}
                                 >
                                     <option value="">Seleccionar...</option>
-                                    {roles.map(nombre => (
+                                    {uniqueRoles.map(nombre => (
                                         <option key={nombre} value={nombre}>
                                             {nombre}
                                         </option>
@@ -522,16 +537,18 @@ const CostosPage = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Experiencia</label>
                                     <select
                                         className={`w-full border rounded-lg p-2 ${
-                                            editingId
+                                            (!formData.rol || editingId)
                                                 ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                                                 : 'border-gray-300'
                                         }`}
                                         value={formData.seniority}
                                         onChange={e => setFormData({ ...formData, seniority: e.target.value })}
-                                        disabled={!!editingId}
+                                        disabled={!formData.rol || !!editingId}
                                     >
-                                        <option value="">Nivel...</option>
-                                        {experiencias.map(exp => (
+                                        <option value="">
+                                            {formData.rol ? "Seleccionar Nivel..." : "Seleccione Rol primero"}
+                                        </option>
+                                        {filteredExperiencias.map(exp => (
                                             <option key={exp} value={exp}>
                                                 {exp}
                                             </option>

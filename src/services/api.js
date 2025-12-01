@@ -130,4 +130,17 @@ export const ApiService = {
 	        throw error;
 	    }
 	},
+
+    // 9. Obtener Lista Completa de Roles (Objetos con ID, Nombre, Exp)
+    // Esto es necesario para cruzar el ID del costo con el nombre real
+    obtenerTodosLosRoles: async () => {
+        try {
+            const response = await fetch(`${BASE_URL}/roles`); // Endpoint que devuelve List<Rol>
+            if (!response.ok) throw new Error("Error al obtener roles completos");
+            return await response.json();
+        } catch (error) {
+            console.error("Error fetching full roles:", error);
+            return [];
+        }
+    }
 };
