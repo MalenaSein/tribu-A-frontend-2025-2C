@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; 
-import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter, Layers } from 'lucide-react';
+import { Plus, Edit2, Loader, ArrowLeft, Calendar, Filter, Layers, Trash2 } from 'lucide-react'; 
 import { ApiService } from '../services/api';
 import AuthService from '../services/AuthService';
 
@@ -11,9 +11,9 @@ const CostosPage = () => {
     const [costos, setCostos] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // listas para selects dinámicos
-    const [roles, setRoles] = useState([]);              // ["Analista", "Desarrollador", ...]
-    const [experiencias, setExperiencias] = useState([]); // ["Junior", "Senior", "Nivel I", ...]
+    // Listas para selects dinámicos
+    const [roles, setRoles] = useState([]);              
+    const [experiencias, setExperiencias] = useState([]); 
 
     // Modales
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,8 +85,7 @@ const CostosPage = () => {
 
 	const loadRoles = async () => {
 	  try {
-	    const data = await ApiService.obtenerNombreRoles(); // <- ya viene el array
-	    console.log('roles cargados:', data);              // para verificar en consola
+	    const data = await ApiService.obtenerNombreRoles(); 
 	    setRoles(data || []);
 	  } catch (error) {
 	    console.error("Error cargando roles->", error);
@@ -96,7 +95,6 @@ const CostosPage = () => {
 	const loadExperiencias = async () => {
 	  try {
 	    const data = await ApiService.obtenerExperienciasRoles();
-	    console.log('experiencias cargadas:', data);
 	    setExperiencias(data || []);
 	  } catch (error) {
 	    console.error("Error cargando experiencias->", error);
@@ -159,6 +157,19 @@ const CostosPage = () => {
             anio: anioEdit
         });
         setIsModalOpen(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm("¿Estás seguro de que deseas eliminar este costo? Esta acción no se puede deshacer.")) {
+            try {
+                await ApiService.eliminarCosto(id);
+                alert("Costo eliminado correctamente");
+                loadData();
+            } catch (error) {
+                console.error(error);
+                alert("Error al eliminar el costo");
+            }
+        }
     };
 
     const handleSave = async (e) => {
@@ -323,10 +334,10 @@ const CostosPage = () => {
                                     <option key={m.id} value={m.id}>{m.nombre}</option>
                                 ))}
                             </select>
-
+                            
                             <input
                                 type="number"
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-24"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-24 appearance-none"
                                 value={filtroAnio}
                                 onChange={e => setFiltroAnio(parseInt(e.target.value))}
                                 min="2020"
@@ -354,7 +365,7 @@ const CostosPage = () => {
                             onClick={handleNuevoCosto}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition justify-center text-sm"
                         >
-                            <Plus size={18} /> Nueva Tarifa
+                            <Plus size={18} /> Nuevo Costo
                         </button>
                     </div>
                 </div>
@@ -364,8 +375,8 @@ const CostosPage = () => {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 text-gray-600 text-sm uppercase">
                             <tr>
-                                <th className="px-6 py-4 font-semibold">Rol</th>
-                                <th className="px-6 py-4 font-semibold">Seniority</th>
+                                <th className="px-6 py-4 font-semibold">Nombre del Rol</th>
+                                <th className="px-6 py-4 font-semibold">Experiencia</th>
                                 <th className="px-6 py-4 font-semibold">Costo Mensual</th>
                                 <th className="px-6 py-4 font-semibold">Mes de Vigencia</th>
                                 <th className="px-6 py-4 font-semibold text-right">Acciones</th>
@@ -399,24 +410,36 @@ const CostosPage = () => {
                                             <td className="px-6 py-4 font-mono text-gray-700 font-bold">
                                                 USD {c.costo}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 flex items-center gap-2">
-                                                <Calendar size={14} />
-                                                {formatVigencia(c.fecha)}
+                                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar size={14} />
+                                                    {formatVigencia(c.fecha)}
+                                                </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleEdit(c)}
-                                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1 justify-end w-full"
-                                                >
-                                                    <Edit2 size={14} /> Editar
-                                                </button>
+                                            <td className="px-6 py-4 text-right whitespace-nowrap">
+                                                <div className="flex justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleEdit(c)}
+                                                        className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center gap-1"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit2 size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(c.id)}
+                                                        className="text-red-600 hover:text-red-800 font-medium text-sm flex items-center gap-1 ml-2"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
                                         <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                                            No hay tarifas cargadas para <b>{MESES[filtroMes - 1].nombre} {filtroAnio}</b>.
+                                            No hay costos cargados para <b>{MESES[filtroMes - 1].nombre} {filtroAnio}</b>.
                                         </td>
                                     </tr>
                                 )
@@ -455,7 +478,7 @@ const CostosPage = () => {
                                     </label>
                                     <input
                                         type="number"
-                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm appearance-none" 
                                         min="2020"
                                         max="2030"
                                         value={formData.anio}
@@ -496,7 +519,7 @@ const CostosPage = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 {/* SENIORITY */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Seniority</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Experiencia</label>
                                     <select
                                         className={`w-full border rounded-lg p-2 ${
                                             editingId
@@ -521,7 +544,7 @@ const CostosPage = () => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Costo (USD)</label>
                                     <input
                                         type="number"
-                                        className={`w-full border rounded-lg p-2 ${
+                                        className={`w-full border rounded-lg p-2 appearance-none ${
                                             usarPorcentaje ? 'bg-gray-100' : 'border-gray-300'
                                         }`}
                                         required
@@ -558,7 +581,7 @@ const CostosPage = () => {
                                             <div className="relative w-1/2">
                                                 <input
                                                     type="number"
-                                                    className="w-full border border-gray-300 rounded-lg p-2 pr-8"
+                                                    className="w-full border border-gray-300 rounded-lg p-2 pr-8 appearance-none"
                                                     value={porcentaje}
                                                     onChange={e => setPorcentaje(e.target.value)}
                                                 />
@@ -630,7 +653,7 @@ const CostosPage = () => {
                                     </label>
                                     <input
                                         type="number"
-                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm"
+                                        className="w-full border border-gray-300 rounded-lg p-2 text-sm appearance-none"
                                         min="2020"
                                         max="2030"
                                         value={massFormData.anio}
@@ -646,7 +669,7 @@ const CostosPage = () => {
                                 <div className="relative">
                                     <input
                                         type="number"
-                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-lg"
+                                        className="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-lg appearance-none"
                                         required
                                         placeholder="Ej: 20 o -5"
                                         value={massFormData.porcentaje}

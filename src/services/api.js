@@ -42,12 +42,10 @@ export const ApiService = {
             });
             
             if (!response.ok) {
-                const errorBody = await response.text(); // Intentamos leer el error del backend
+                const errorBody = await response.text();
                 throw new Error(`Error ${response.status}: ${errorBody || 'No se pudo guardar el costo.'}`);
             }
             
-            // Si el backend devuelve JSON, lo retornamos
-            // Si devuelve vacío (200 OK sin body), retornamos true
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.indexOf("application/json") !== -1) {
                 return await response.json();
@@ -77,7 +75,21 @@ export const ApiService = {
         }
     },
 
-    // 5. Reporte Calculado (GET)
+    // 5. Eliminar Costo (DELETE)
+    eliminarCosto: async (id) => {
+        try {
+            const response = await fetch(`${BASE_URL}/costos-rol/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) throw new Error("Error al eliminar");
+            return true;
+        } catch (error) {
+            console.error("Error eliminando:", error);
+            throw error;
+        }
+    },
+
+    // 6. Reporte Calculado (GET)
     obtenerReporteMensual: async () => {
         try {
             const response = await fetch(`${BASE_URL}/reportes/mensual`);
@@ -91,7 +103,7 @@ export const ApiService = {
         }
     },
 
-	// 6. Obtener Nombre roles (GET)
+	// 7. Obtener Nombre roles (GET)
 	obtenerNombreRoles: async () => {
 	    try {
 	        const response = await fetch(`${BASE_URL}/roles/nombres`);
@@ -105,7 +117,7 @@ export const ApiService = {
 	    }
 	},
 
-	// 7. Obtener Experiencias roles (GET)
+	// 8. Obtener Experiencias roles (GET)
 	obtenerExperienciasRoles: async () => {
 	    try {
 	        const response = await fetch(`${BASE_URL}/roles/experiencias`);
@@ -117,5 +129,5 @@ export const ApiService = {
 	        console.error("Error de red o servidor:", error);
 	        throw error;
 	    }
-	}	
+	},
 };
