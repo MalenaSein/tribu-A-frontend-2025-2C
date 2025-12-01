@@ -12,11 +12,11 @@ const ReportesPage = () => {
     const [busqueda, setBusqueda] = useState('');
     const [anio, setAnio] = useState(2025); 
 
-    const cargarDatos = async () => {
+    const cargarDatos = async (anio) => {
         setLoading(true);
         try {
             // Llamada al endpoint que usa la Calculadora
-            const dataReporte = await ApiService.obtenerReporteMensual();
+            const dataReporte = await ApiService.obtenerReporteMensual(anio);
             
             const proyectosProcesados = dataReporte.map(item => {
                 // Convertimos la lista de objetos a un array simple de 12 posiciones
@@ -40,7 +40,7 @@ const ReportesPage = () => {
     };
 
     useEffect(() => {
-        cargarDatos();
+        cargarDatos(anio);
     }, [anio]);
 
     const proyectosFiltrados = proyectos.filter(p => 
@@ -107,7 +107,7 @@ const ReportesPage = () => {
                         
                         {/* Botón Recalcular */}
                         <button 
-                            onClick={cargarDatos}
+                            onClick={() => cargarDatos(anio)}
                             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm transition-colors"
                             title="Recalcular costos en tiempo real"
                         >

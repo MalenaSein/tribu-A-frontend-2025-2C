@@ -90,9 +90,9 @@ export const ApiService = {
     },
 
     // 6. Reporte Calculado (GET)
-    obtenerReporteMensual: async () => {
+    obtenerReporteMensual: async (anio) => {
         try {
-            const response = await fetch(`${BASE_URL}/reportes/mensual`);
+            const response = await fetch(`${BASE_URL}/reportes/mensual/${anio}`);
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: No se pudo generar el reporte`);
             }
