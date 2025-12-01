@@ -16,8 +16,25 @@ const MyHours = () => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // ✅ FUNCIÓN PARA OBTENER FECHAS DE LA SEMANA ACTUAL
+    const getCurrentWeekDates = () => {
+        const now = new Date();
+        const dayOfWeek = now.getDay(); // 0 = Domingo, 1 = Lunes, ...
+        const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Ajustar al lunes
+
+        const monday = new Date(now);
+        monday.setDate(now.getDate() + diff);
+        monday.setHours(0, 0, 0, 0);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        return { monday, sunday };
+    };
+
     // ========================================
-    // CARGAR HORAS DEL EMPLEADO
+    // CARGAR HORAS DEL EMPLEADO (SOLO SEMANA ACTUAL)
     // ========================================
     useEffect(() => {
         if (!employeeId) {
@@ -31,8 +48,17 @@ const MyHours = () => {
         setLoading(true);
         setError(null);
         try {
-            console.log('📋 Cargando mis horas...');
-            const data = await APIClient.getTimeEntries(employeeId);
+            console.log('📋 Cargando mis horas de la semana actual...');
+
+            // ✅ OBTENER FECHAS DE LA SEMANA ACTUAL
+            const { monday, sunday } = getCurrentWeekDates();
+            const startDate = monday.toISOString().split('T')[0];
+            const endDate = sunday.toISOString().split('T')[0];
+
+            console.log('📅 Filtrando por semana actual:', { startDate, endDate });
+
+            // ✅ LLAMAR A LA API CON FILTRO DE FECHAS
+            const data = await APIClient.getTimeEntries(employeeId, startDate, endDate);
 
             // Ordenar por fecha descendente
             const sorted = data.sort((a, b) =>
@@ -40,7 +66,7 @@ const MyHours = () => {
             );
 
             setEntries(sorted);
-            console.log('✅ Horas cargadas:', sorted.length);
+            console.log('✅ Horas cargadas (solo semana actual):', sorted.length);
 
             // 🔍 DEBUG: Ver qué datos vienen del backend
             if (sorted.length > 0) {
@@ -146,6 +172,14 @@ const MyHours = () => {
         });
     };
 
+    const formatDateForDisplay = (date) => {
+        return date.toLocaleDateString('es-AR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    };
+
     // ✅ HELPERS PARA MOSTRAR NOMBRES
     const getProjectDisplay = (entry) => {
         if (entry.projectName) {
@@ -170,6 +204,9 @@ const MyHours = () => {
     const approvedEntries = entries.filter(e => e.status === 'APPROVED');
     const rejectedEntries = entries.filter(e => e.status === 'REJECTED');
 
+    // ✅ OBTENER FECHAS PARA MOSTRAR EN EL HEADER
+    const { monday, sunday } = getCurrentWeekDates();
+
     // ========================================
     // RENDER: LOADING
     // ========================================
@@ -193,12 +230,26 @@ const MyHours = () => {
     return (
         <div className="min-h-screen bg-gray-100 font-sans text-gray-900">
             <Header
-                title={`Mis Horas`}
-                subtitle="Gestiona tus registros"
+                title="Mis Horas - Semana Actual"
+                subtitle={`Del ${formatDateForDisplay(monday)} al ${formatDateForDisplay(sunday)}`}
                 showBack={true}
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+                {/* Info sobre semana actual */}
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                    <div className="flex items-center">
+                        <div className="flex-shrink-0">
+                            <Clock className="h-5 w-5 text-blue-400" />
+                        </div>
+                        <div className="ml-3">
+                            <p className="text-sm text-blue-700">
+                                <strong>Solo se muestran las horas de la semana actual.</strong> Las semanas anteriores están cerradas y no se pueden modificar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Error */}
                 {error && (
@@ -342,7 +393,7 @@ const MyHours = () => {
                 ) : (
                     <div className="text-center p-10 bg-white rounded-xl shadow-sm border border-gray-200">
                         <Clock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                        <p className="text-lg font-medium text-gray-600">No tienes horas registradas aún</p>
+                        <p className="text-lg font-medium text-gray-600">No tienes horas registradas esta semana</p>
                         <p className="text-sm text-gray-500 mt-2">
                             Ve a "Selección de Proyectos" para comenzar a cargar horas
                         </p>
