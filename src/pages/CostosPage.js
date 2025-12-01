@@ -100,6 +100,8 @@ const CostosPage = () => {
         const base = parseFloat(valorBase);
         const p = parseFloat(porc);
         const resultado = base + (base * (p / 100));
+        
+        // Retornamos string fijo, pero validamos negativo después
         return resultado.toFixed(2);
     };
 
@@ -164,6 +166,13 @@ const CostosPage = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         
+        // --- VALIDACIÓN DE COSTO NEGATIVO ---
+        if (parseFloat(formData.costo) < 0) {
+            alert("El costo no puede ser negativo. Por favor ingrese un valor válido.");
+            return;
+        }
+        // ------------------------------------
+
         // --- VALIDACIÓN DE DUPLICADOS ---
         const existeDuplicado = costos.some(c => {
             // Si estamos editando, no comparamos contra el mismo registro
@@ -188,9 +197,10 @@ const CostosPage = () => {
             alert(`Ya existe un costo registrado para el rol "${formData.rol}" (${formData.seniority}) en este período.`);
             return; // Detenemos la ejecución aquí
         }
+        // ---------------------------------
 
         const datosCosto = { 
-            rolId: formData.rol, // Nombre del rol (el backend busca el ID)
+            rolId: formData.rol, 
             nombre: formData.rol, 
             experiencia: formData.seniority,
             costo: formData.costo.toString(),
@@ -200,7 +210,6 @@ const CostosPage = () => {
 
         try {
             if (editingId) {
-                // Para update, el ID del costo viaja en la URL
                 await ApiService.actualizarCosto(editingId, datosCosto);
                 alert("Costo mensual actualizado correctamente");
             } else {
@@ -213,7 +222,6 @@ const CostosPage = () => {
             setUsarPorcentaje(false);
             setPorcentaje('');
             
-            // Actualizamos filtros para ver el nuevo dato creado
             setFiltroMes(parseInt(formData.mes));
             setFiltroAnio(parseInt(formData.anio));
 
@@ -252,6 +260,18 @@ const CostosPage = () => {
             alert("No hay costos registrados para el mes seleccionado");
             return;
         }
+
+        // --- VALIDACIÓN PREVIA: ¿Algún costo queda negativo? ---
+        const algunNegativo = costosAfectados.some(c => {
+            const nuevoValor = calcularValorConPorcentaje(c.costo, massFormData.porcentaje);
+            return parseFloat(nuevoValor) < 0;
+        });
+
+        if (algunNegativo) {
+            alert("La operación no se puede realizar porque resultaría en costos negativos para uno o más roles.");
+            return;
+        }
+        // -------------------------------------------------------
 
         if (!window.confirm(`Se actualizarán ${costosAfectados.length} costos con un ${massFormData.porcentaje}%. ¿Continuar?`)) {
             return;
@@ -392,7 +412,7 @@ const CostosPage = () => {
                             <tr>
                                 <th className="px-6 py-4 font-semibold">Nombre del Rol</th>
                                 <th className="px-6 py-4 font-semibold">Experiencia</th>
-                                <th className="px-6 py-4 font-semibold">Costo Mensual</th>
+                                <th className="px-6 py-4 font-semibold">Costo por Hora</th>
                                 <th className="px-6 py-4 font-semibold min-w-[150px]">Mes de Vigencia</th>
                                 <th className="px-6 py-4 font-semibold text-right min-w-[120px]">Acciones</th>
                             </tr>
@@ -567,6 +587,7 @@ const CostosPage = () => {
                                         required
                                         value={formData.costo}
                                         readOnly={usarPorcentaje}
+                                        min="0" // Validación HTML básica
                                         onChange={e => setFormData({ ...formData, costo: e.target.value })}
                                     />
                                 </div>
